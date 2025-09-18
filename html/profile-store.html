@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketPlace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #000 0%, #111 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            margin-right: 20px;
+            transition: transform 0.2s;
+        }
+
+        .back-btn:hover {
+            transform: translateX(-2px);
+        }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: 700;
+            flex: 1;
+            text-align: center;
+            margin-right: 44px;
+            background: linear-gradient(135deg, #fff 0%, #ccc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+            border-right: 1px solid #333;
+            width: 60px;
+            position: fixed;
+            left: 0;
+            top: 80px;
+            height: calc(100vh - 80px);
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+        }
+
+        .sidebar-icon {
+            padding: 15px;
+            text-align: center;
+            font-size: 20px;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            margin: 5px;
+        }
+
+        .sidebar-icon:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.1);
+        }
+
+        .sidebar-icon.active {
+            color: #4CAF50;
+            background: rgba(76, 175, 80, 0.2);
+        }
+
+        .main-content {
+            margin-left: 60px;
+            padding: 20px;
+        }
+
+        .search-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            align-items: center;
+        }
+
+        .category-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #333;
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .category-select:hover {
+            border-color: #4CAF50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+        }
+
+        .search-container {
+            flex: 1;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #333;
+            color: #fff;
+            padding: 12px 45px 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .filter-tags {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .tag:hover, .tag.active {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .product-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(76, 175, 80, 0.5);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .product-card:hover .product-image {
+            transform: scale(1.05);
+        }
+
+        .product-info {
+            padding: 20px;
+        }
+
+        .product-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .product-price {
+            font-size: 16px;
+            color: #4CAF50;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .product-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .edit-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+
+        .edit-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .buy-btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .buy-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #4CAF50;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #ccc;
+            margin-top: 5px;
+        }
+
+        .floating-add-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .floating-add-btn:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 12px 35px rgba(76, 175, 80, 0.6);
+        }
+
+        /* Icons */
+        .icon-user::before { content: '👤'; }
+        .icon-history::before { content: '🕐'; }
+        .icon-building::before { content: '🏢'; }
+        .icon-back::before { content: '←'; }
+        .icon-search::before { content: '🔍'; }
+        .icon-edit::before { content: '✏️'; }
+        .icon-add::before { content: '+'; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                max-width: 100%;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 15px;
+            }
+            
+            .sidebar {
+                position: static;
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                justify-content: center;
+                border-right: none;
+                border-bottom: 1px solid #333;
+            }
+            
+            .sidebar-icon {
+                flex: 1;
+                max-width: 60px;
+            }
+
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 15px;
+            }
+
+            .search-section {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .stats-bar {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn icon-back"></button>
+            <h1 class="header-title">MarketPlace</h1>
+        </div>
+
+        <div class="sidebar">
+            <div class="sidebar-icon icon-user"></div>
+            <div class="sidebar-icon icon-history"></div>
+            <div class="sidebar-icon icon-building active"></div>
+        </div>
+
+        <div class="main-content">
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <span class="stat-number">234</span>
+                    <div class="stat-label">Total Products</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">67</span>
+                    <div class="stat-label">Categories</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">1.2k</span>
+                    <div class="stat-label">Active Users</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">4.8</span>
+                    <div class="stat-label">Rating</div>
+                </div>
+            </div>
+
+            <div class="search-section">
+                <select class="category-select">
+                    <option>Kategori</option>
+                    <option>Ikan Hias</option>
+                    <option>Ikan Konsumsi</option>
+                    <option>Aquarium</option>
+                    <option>Pakan Ikan</option>
+                </select>
+                <div class="search-container">
+                    <input type="text" class="search-input" placeholder="Cari produk...">
+                    <button class="search-btn icon-search"></button>
+                </div>
+            </div>
+
+            <div class="filter-tags">
+                <div class="tag active">Semua</div>
+                <div class="tag">Terpopuler</div>
+                <div class="tag">Harga Rendah</div>
+                <div class="tag">Terbaru</div>
+                <div class="tag">Rating Tinggi</div>
+                <div class="tag">Promo</div>
+            </div>
+
+            <div class="products-grid">
+                <div class="product-card">
+                    <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300&h=200&fit=crop" alt="Clown Fish" class="product-image">
+                    <div class="product-info">
+                        <h3 class="product-name">Clown Fish</h3>
+                        <div class="product-price">Rp25.000</div>
+                        <div class="product-actions">
+                            <button class="edit-btn icon-edit"></button>
+                            <button class="buy-btn">Beli Aja</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <img src="https://images.unsplash.com/photo-1520637836862-4d197d17c55a?w=300&h=200&fit=crop" alt="Ikan Cupang" class="product-image">
+                    <div class="product-info">
+                        <h3 class="product-name">Ikan Cupang</h3>
+                        <div class="product-price">Rp15.000</div>
+                        <div class="product-actions">
+                            <button class="edit-btn icon-edit"></button>
+                            <button class="buy-btn">Beli Aja</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <img src="https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=300&h=200&fit=crop" alt="Ikan Gurame" class="product-image">
+                    <div class="product-info">
+                        <h3 class="product-name">Ikan Gurame</h3>
+                        <div class="product-price">Rp35.000</div>
+                        <div class="product-actions">
+                            <button class="edit-btn icon-edit"></button>
+                            <button class="buy-btn">Beli Aja</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <img src="https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=300&h=200&fit=crop" alt="Ikan Tongkol" class="product-image">
+                    <div class="product-info">
+                        <h3 class="product-name">Ikan Tongkol</h3>
+                        <div class="product-price">Rp45.000</div>
+                        <div class="product-actions">
+                            <button class="edit-btn icon-edit"></button>
+                            <button class="buy-btn">Beli Aja</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <img src="https://images.unsplash.com/photo-1583212292454-1fe6229603b7?w=300&h=200&fit=crop" alt="Ikan Koi" class="product-image">
+                    <div class="product-info">
+                        <h3 class="product-name">Ikan Koi Premium</h3>
+                        <div class="product-price">Rp125.000</div>
+                        <div class="product-actions">
+                            <button class="edit-btn icon-edit"></button>
+                            <button class="buy-btn">Beli Aja</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <img src="https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300&h=200&fit=crop" alt="Ikan Arwana" class="product-image">
+                    <div class="product-info">
+                        <h3 class="product-name">Ikan Arwana</h3>
+                        <div class="product-price">Rp750.000</div>
+                        <div class="product-actions">
+                            <button class="edit-btn icon-edit"></button>
+                            <button class="buy-btn">Beli Aja</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="floating-add-btn icon-add"></button>
+    </div>
+
+    <script>
+        // Interactive functionality
+        document.querySelector('.back-btn').addEventListener('click', function() {
+            alert('Back button clicked');
+        });
+
+        document.querySelectorAll('.sidebar-icon').forEach(icon => {
+            icon.addEventListener('click', function() {
+                document.querySelectorAll('.sidebar-icon').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('.tag').forEach(tag => {
+            tag.addEventListener('click', function() {
+                document.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('.buy-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const productName = this.closest('.product-card').querySelector('.product-name').textContent;
+                alert(`Membeli ${productName}!`);
+            });
+        });
+
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const productName = this.closest('.product-card').querySelector('.product-name').textContent;
+                alert(`Edit ${productName}!`);
+            });
+        });
+
+        document.querySelector('.floating-add-btn').addEventListener('click', function() {
+            alert('Tambah produk baru!');
+        });
+
+        document.querySelector('.search-btn').addEventListener('click', function() {
+            const searchTerm = document.querySelector('.search-input').value;
+            alert(`Mencari: ${searchTerm}`);
+        });
+
+        // Search on Enter
+        document.querySelector('.search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.querySelector('.search-btn').click();
+            }
+        });
+    </script>
+</body>
+</html>

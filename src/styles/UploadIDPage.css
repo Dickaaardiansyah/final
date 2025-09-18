@@ -1,0 +1,91 @@
+/* src/styles/UploadIDPage.css */
+.upload-id-page {
+  padding: 20px;
+  max-width: 500px;
+  margin: 0 auto;
+  background: #1a1a1a;
+  min-height: 100vh;
+  color: white;
+}
+
+.upload-id-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.upload-id-title {
+  margin-left: 15px;
+  font-size: 24px;
+}
+
+.upload-id-description {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #a0a0a0;
+}
+
+.id-type-selection {
+  margin-bottom: 30px;
+}
+
+.id-type-title {
+  font-size: 16px;
+  margin-bottom: 15px;
+  color: #a0a0a0;
+}
+
+.id-type-options {
+  display: flex;
+  gap: 15px;
+}
+
+.id-type-btn {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background: #2a2a2a;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.id-type-btn.selected {
+  border-color: #007bff;
+  background: rgba(0, 123, 255, 0.1);
+}
+
+.upload-section {
+  margin-bottom: 30px;
+}
+
+.upload-area {
+  border: 2px dashed #444;
+  border-radius: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  transition: border-color 0.3s ease;
+}
+
+.upload-area:hover {
+  border-color: #007bff;
+}
+
+.upload-input {
+  display: none;
+}
+
+.upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  cursor: pointer;
+  color: #a0a0a0;
+}
+
+.continue-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

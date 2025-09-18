@@ -1,0 +1,390 @@
+/* Scan Container Styles */
+.scan-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.section-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.section-subtitle {
+  font-size: 1.2rem;
+  color: #666;
+  margin-bottom: 40px;
+}
+
+/* Scan Box Styles */
+.scan-box {
+  border: 3px dashed #007bff;
+  border-radius: 20px;
+  padding: 60px 40px;
+  background: linear-gradient(135deg, #f8f9ff 0%, #e3f2fd 100%);
+  margin: 40px 0;
+  transition: all 0.3s ease;
+}
+
+.scan-box:hover {
+  border-color: #0056b3;
+  background: linear-gradient(135deg, #f0f8ff 0%, #e1f5fe 100%);
+  transform: translateY(-2px);
+}
+
+.scan-icon {
+  font-size: 4rem;
+  color: #007bff;
+  margin-bottom: 20px;
+}
+
+.scan-text {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.scan-hint {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 30px;
+}
+
+/* Button Styles */
+.button-group {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.file-label,
+.camera-button,
+.capture-button,
+.cancel-button,
+.save-button,
+.catalog-button,
+.reset-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.file-label {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: white;
+}
+
+.file-label:hover {
+  background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+}
+
+.camera-button {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+}
+
+.camera-button:hover {
+  background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+}
+
+/* Camera Styles */
+.camera-container {
+  max-width: 600px;
+  margin: 0 auto;
+  background: #000;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.camera-video {
+  width: 100%;
+  height: auto; /* Changed to auto to maintain aspect ratio */
+  object-fit: cover;
+  min-height: 250px; /* Ensure it has a minimum height */
+}
+
+.camera-controls {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px;
+  background: #333;
+}
+
+.capture-button {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: white;
+}
+
+.cancel-button {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: white;
+}
+
+/* Result Container Styles */
+.result-container {
+  position: relative;
+  max-width: 600px;
+  margin: 40px auto;
+}
+
+.image-preview {
+  margin-bottom: 20px;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Analyzing Modal */
+.analyzing-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.analyzing-content {
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.analyzing-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.analyzing-content p {
+  font-size: 1.2rem;
+  color: #333;
+  margin: 0;
+}
+
+/* Analysis Result Styles */
+.analysis-result {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  margin: 20px 0;
+}
+
+.result-card {
+  position: relative;
+  display: flex; /* Kept as flex for desktop */
+  flex-wrap: wrap; /* Added to handle wrapping on smaller screens */
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.result-image {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.result-info {
+  flex: 1; /* Added to make it take available space */
+  padding: 20px;
+  text-align: left;
+}
+
+.fish-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.result-info p {
+  margin: 8px 0;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.fish-description {
+  color: #666;
+  font-style: italic;
+  margin-top: 15px !important;
+  line-height: 1.4;
+}
+
+.close-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 35px;
+  height: 35px;
+  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.close-button:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  padding: 20px;
+  flex-wrap: wrap;
+}
+
+.save-button {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+}
+
+.save-button:hover {
+  background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+}
+
+.catalog-button {
+  background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+  color: white;
+}
+
+.catalog-button:hover {
+  background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+}
+
+.reset-button {
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+  color: white;
+}
+
+.reset-button:hover {
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .scan-container {
+    padding: 20px 15px;
+  }
+
+  .section-title {
+    font-size: 2rem;
+  }
+
+  .scan-box {
+    padding: 40px 20px;
+  }
+
+  .button-group {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .file-label,
+  .camera-button {
+    width: 200px;
+  }
+
+  .result-card {
+    flex-direction: column;
+    /* Ensure image and info stack vertically */
+  }
+
+  .result-image {
+    width: 100%;
+    height: 200px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .save-button,
+  .catalog-button,
+  .reset-button {
+    width: 200px;
+  }
+}
+
+/* Hide file input */
+.file-input {
+  display: none;
+}
+
+.request-access-button {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex
+;
+  align-items: center;
+  gap: 8px;
+  min-width: 180px;
+  justify-content: center;
+}

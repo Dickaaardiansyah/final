@@ -1,0 +1,59 @@
+### Register User
+POST http://localhost:5000/users
+Content-Type: application/json
+
+{
+  "name": "Maulana Nurfaizi",
+  "phone": "0812345678900",
+  "email": "maulanas@example.com",
+  "gender": "male",
+  "password": "password123",
+  "confirmPassword": "password123"
+}
+
+### Login User
+POST http://localhost:5000/login
+Content-Type: application/json
+
+{
+  "email": "anakbudiman01@gmail.com",
+  "password": "123456"
+}
+
+### Register Admin
+POST http://localhost:5000/admin/create
+Content-Type: application/json
+
+{
+  "name": "Super Admin",
+  "phone": "081234567890",
+  "email": "superadmin@fishmap.com",
+  "gender": "male",
+  "password": "password123",
+  "role": "super_admin"
+}
+
+### Login Admin
+POST http://localhost:5000/admin/login
+Content-Type: application/json
+
+{
+  "email": "superadmin@fishmap.com",
+  "password": "password123"
+}
+
+### tes
+GET http://localhost:5000/api/catalog/entries?my_data_only=true
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsIm5hbWUiOiJNYXVsYW5hIE51cmZhaXppIEFudWdlcmFoIiwiZW1haWwiOiJhbmFrYnVkaW1hbjAxQGdtYWlsLmNvbSIsImlhdCI6MTc1NjE3ODQwNiwiZXhwIjoxNzU2MTgyMDA2fQ.ZbLsHw41TF_5-W0SmFI-m3LvFmmpcoo7uSufYr3lGr4
+
+### Create Galery - Pantai
+POST http://localhost:5000/api/galery
+Content-Type: application/json  
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbklkIjoxLCJuYW1lIjoiU3VwZXIgQWRtaW4iLCJlbWFpbCI6InN1cGVyYWRtaW5AZmlzaG1hcC5jb20iLCJyb2xlIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3NTYyNzU1NjcsImV4cCI6MTc1NjMwNDM2N30.qxAdk2nQk1Wz_Z0JGhe8RXPBZWHkR_D9eOkL_cu4Ulk
+
+{
+  "nama": "Pantai Pink Komodo",
+  "gambar": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=",
+  "deskripsi": "Pantai berpasir pink yang unik di Pulau Komodo, Nusa Tenggara Timur. Warna pink berasal dari serpihan karang merah yang bercampur dengan pasir putih."
+}

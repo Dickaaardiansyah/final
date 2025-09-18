@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Mas Dicka</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 250px;
+            background-color: #111;
+            padding: 20px 0;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            border: none;
+            background: none;
+            color: #fff;
+            width: 100%;
+            text-align: left;
+            font-size: 16px;
+        }
+
+        .nav-item:hover {
+            background-color: #222;
+        }
+
+        .nav-item.active {
+            background-color: #333;
+            border-right: 3px solid #fff;
+        }
+
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 15px;
+            fill: currentColor;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 20px 30px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .back-button {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            margin-right: 20px;
+            padding: 5px;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        /* Profile Content */
+        .profile-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 25px;
+            color: #fff;
+        }
+
+        .profile-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #222;
+        }
+
+        .profile-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-content {
+            display: flex;
+            align-items: center;
+        }
+
+        .item-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 15px;
+            fill: #888;
+        }
+
+        .item-label {
+            color: #ccc;
+            margin-right: 10px;
+        }
+
+        .item-value {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .edit-button {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .edit-icon {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+            }
+            
+            .main-content {
+                margin-left: 200px;
+                padding: 15px 20px;
+            }
+            
+            .page-title {
+                font-size: 28px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <button class="nav-item active" onclick="setActive(this)">
+            <svg class="nav-icon" viewBox="0 0 24 24">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+            Profile
+        </button>
+        <button class="nav-item" onclick="setActive(this)">
+            <svg class="nav-icon" viewBox="0 0 24 24">
+                <path d="M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3Z"/>
+            </svg>
+            History
+        </button>
+        <button class="nav-item" onclick="setActive(this)">
+            <svg class="nav-icon" viewBox="0 0 24 24">
+                <path d="M12,18H6V14H12M21,14V12L20,7H4L3,12V14H4V20H14V14H18V20H20V14M20,4H4V6H20V4Z"/>
+            </svg>
+            Marketplace
+        </button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="header">
+            <button class="back-button">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                </svg>
+            </button>
+            <h1 class="page-title">Profile</h1>
+        </div>
+
+        <!-- Account Info Section -->
+        <div class="profile-section">
+            <h2 class="section-title">Account Info</h2>
+            
+            <div class="profile-item">
+                <div class="item-content">
+                    <svg class="item-icon" viewBox="0 0 24 24">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                    <span class="item-label">Username:</span>
+                    <span class="item-value">Mas Dicka</span>
+                </div>
+                <button class="edit-button">
+                    <svg class="edit-icon" viewBox="0 0 24 24">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="profile-item">
+                <div class="item-content">
+                    <svg class="item-icon" viewBox="0 0 24 24">
+                        <path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM8.9 6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H8.9V6z"/>
+                    </svg>
+                    <span class="item-label">Password:</span>
+                    <span class="item-value">***********</span>
+                </div>
+                <button class="edit-button">
+                    <svg class="edit-icon" viewBox="0 0 24 24">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="profile-item">
+                <div class="item-content">
+                    <svg class="item-icon" viewBox="0 0 24 24">
+                        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                    </svg>
+                    <span class="item-label">Email Address:</span>
+                    <span class="item-value">r****@gmail.com</span>
+                </div>
+                <button class="edit-button">
+                    <svg class="edit-icon" viewBox="0 0 24 24">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Personal Info Section -->
+        <div class="profile-section">
+            <h2 class="section-title">Personal</h2>
+            
+            <div class="profile-item">
+                <div class="item-content">
+                    <span class="item-label">Age:</span>
+                    <span class="item-value">18+</span>
+                </div>
+            </div>
+
+            <div class="profile-item">
+                <div class="item-content">
+                    <span class="item-label">Birthday:</span>
+                    <span class="item-value">Dec 20, 2004</span>
+                </div>
+            </div>
+
+            <div class="profile-item">
+                <div class="item-content">
+                    <span class="item-label">Gender:</span>
+                    <span class="item-value">(opsional)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setActive(element) {
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Add active class to clicked item
+            element.classList.add('active');
+            
+            // Update page content based on selection
+            const pageTitle = document.querySelector('.page-title');
+            const navText = element.textContent.trim();
+            pageTitle.textContent = navText;
+            
+            // You can add more functionality here to show different content
+            // based on the selected navigation item
+        }
+
+        // Add click handlers for edit buttons
+        document.querySelectorAll('.edit-button').forEach(button => {
+            button.addEventListener('click', function() {
+                alert('Edit functionality would be implemented here');
+            });
+        });
+
+        // Back button functionality
+        document.querySelector('.back-button').addEventListener('click', function() {
+            alert('Back navigation would be implemented here');
+        });
+    </script>
+</body>
+</html>

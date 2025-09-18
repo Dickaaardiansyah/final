@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fishsnap: AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+            color: white;
+            min-height: 100vh;
+        }
+
+        /* Header Navigation */
+        .header {
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .logo::before {
+            content: "🐟";
+            font-size: 24px;
+        }
+
+        .nav {
+            display: flex;
+            gap: 40px;
+            list-style: none;
+        }
+
+        .nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+
+        .nav a:hover {
+            opacity: 0.8;
+        }
+
+        .user-icon {
+            width: 40px;
+            height: 40px;
+            background: #333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 200px);
+            padding: 40px;
+        }
+
+        .fish-card {
+            background: white;
+            border-radius: 20px;
+            padding: 0;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+        }
+
+        .fish-image {
+            width: 100%;
+            height: 400px;
+            background: linear-gradient(45deg, #ff6b35, #f7931e, #4a90e2);
+            border-radius: 15px;
+            margin: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .fish-image::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><path d="M50 150 Q100 100 200 150 Q300 200 350 150 Q320 120 280 140 Q240 110 200 150 Q160 110 120 140 Q80 120 50 150" fill="%23ff8c42" opacity="0.8"/><path d="M200 150 Q240 120 280 140 Q320 110 350 120 L340 160 Q300 180 280 160 Q240 190 200 150" fill="%23ff6b35"/><circle cx="220" cy="140" r="8" fill="%23000" opacity="0.7"/><path d="M50 150 Q80 170 120 160 Q160 190 200 150 Q180 170 160 160 Q120 180 80 170 Q60 180 50 150" fill="%234a90e2" opacity="0.6"/></svg>') center/contain no-repeat;
+        }
+
+        .fish-details {
+            padding: 30px;
+            color: #333;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            background: #ddd;
+            border-radius: 50%;
+        }
+
+        .username {
+            color: #6c5ce7;
+            text-decoration: underline;
+            font-weight: 600;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .detail-label {
+            color: #6c5ce7;
+            font-weight: 600;
+        }
+
+        .detail-value {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .status-safe {
+            color: #00b894;
+            font-weight: 600;
+        }
+
+        .status-safe::before {
+            content: "⚠️ ";
+        }
+
+        .description {
+            margin: 20px 0;
+        }
+
+        .description-label {
+            color: #6c5ce7;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .description-text {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #666;
+        }
+
+        .order-button {
+            background: #00b894;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+
+        .order-button:hover {
+            background: #00a085;
+            transform: translateY(-2px);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 60px 40px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            margin-top: 60px;
+        }
+
+        .footer h2 {
+            font-size: 32px;
+            margin-bottom: 15px;
+            font-weight: 300;
+        }
+
+        .footer p {
+            opacity: 0.8;
+            max-width: 500px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+            }
+
+            .nav {
+                display: none;
+            }
+
+            .fish-card {
+                grid-template-columns: 1fr;
+                max-width: 500px;
+                margin: 20px;
+            }
+
+            .fish-image {
+                height: 250px;
+                margin: 15px;
+            }
+
+            .fish-details {
+                padding: 20px;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+        }
+
+        /* Animation */
+        .fish-card {
+            animation: slideUp 0.8s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">Fishsnap: AI</div>
+        <nav>
+            <ul class="nav">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#katalog">Katalog</a></li>
+                <li><a href="#galery">galery</a></li>
+                <li><a href="#cuaca">Cuaca</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+        <div class="user-icon">👤</div>
+    </header>
+
+    <main class="main-content">
+        <div class="fish-card">
+            <div class="fish-image"></div>
+            <div class="fish-details">
+                <div class="user-info">
+                    <div class="user-avatar"></div>
+                    <span class="username">M rojak</span>
+                </div>
+
+                <div class="detail-row">
+                    <span class="detail-label">Nama ikan</span>
+                    <span class="detail-value">Ikan Tongkol</span>
+                </div>
+
+                <div class="detail-row">
+                    <span class="detail-label">Kategori</span>
+                    <span class="detail-value">Ikan Konsumsi</span>
+                </div>
+
+                <div class="detail-row">
+                    <span class="detail-label">Kondisi</span>
+                    <span class="detail-value">Mati</span>
+                </div>
+
+                <div class="detail-row">
+                    <span class="detail-label">Tanggal dijual</span>
+                    <span class="detail-value">20-12-2025</span>
+                </div>
+
+                <div class="detail-row">
+                    <span class="detail-label">Tingkat kesehatan</span>
+                    <span class="detail-value status-safe">Aman untuk di konsumsi</span>
+                </div>
+
+                <div class="description">
+                    <div class="description-label">Deskripsi</div>
+                    <div class="description-text">
+                        100% masih fresh bosku, bisa diantar dan bisa di cod, pembayaran djamin tidak bagi bos dikarenakan diambil langsung di nelayan terpercaya, ikan anda bisa? kami siap nyampai
+                    </div>
+                </div>
+
+                <button class="order-button">Pesan sekarang</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <h2>Hubungi Kami</h2>
+        <p>Silakan hubungi kami untuk informasi lebih lanjut atau pengaduan terkait sektor perikanan</p>
+    </footer>
+</body>
+</html>

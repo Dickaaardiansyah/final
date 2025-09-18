@@ -1,0 +1,1130 @@
+/* dashboard.css - Main Dashboard Styles */
+/* Import AdminHeader.css in Header component for header-specific styles */
+
+/* ============================================
+   GLOBAL STYLES & RESET
+============================================ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.sidebarContainer * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ============================================
+   SIDEBAR STYLES
+============================================ */
+.sidebar {
+    width: 280px;
+    background: #ffffff;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    position: fixed;
+    height: 100vh;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    border-right: 1px solid #e2e8f0;
+    overflow-y: auto;
+}
+
+.collapsed {
+    width: 80px;
+}
+
+.collapsed ~ .mainContent {
+    margin-left: 80px;
+}
+
+.collapsed .logo h2,
+.collapsed .logo p,
+.collapsed .navLink span,
+.collapsed .badge {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.collapsed .navLink {
+    justify-content: center;
+    padding: 0.875rem 0.75rem;
+    margin-right: 0;
+    border-radius: 0;
+}
+
+.collapsed .navIcon {
+    margin-right: 0;
+}
+
+/* Logo Section */
+.logo {
+    padding: 1.75rem 2rem;
+    text-align: center;
+    border-bottom: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+    color: white;
+}
+
+.logo h2 {
+    font-weight: 700;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.logo p {
+    font-size: 0.8rem;
+    opacity: 0.85;
+    font-weight: 400;
+}
+
+.fishIcon {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+}
+
+/* Sidebar Toggle */
+.sidebarToggle {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    backdrop-filter: blur(10px);
+}
+
+.sidebarToggle:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.sidebarToggle svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.3s ease;
+}
+
+.collapsed .sidebarToggle svg {
+    transform: rotate(180deg);
+}
+
+/* Navigation Menu */
+.navMenu {
+    list-style: none;
+    padding: 0.75rem 0;
+}
+
+.navItem {
+    margin: 0.25rem 0;
+}
+
+.navLink {
+    display: flex;
+    align-items: center;
+    padding: 0.875rem 1.5rem;
+    color: #64748b;
+    text-decoration: none;
+    border-radius: 0 20px 20px 0;
+    margin-right: 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.navLink:hover {
+    background: linear-gradient(90deg, rgba(8, 145, 178, 0.08), transparent);
+    color: #0891b2;
+    transform: translateX(3px);
+}
+
+.active {
+    background: linear-gradient(90deg, rgba(8, 145, 178, 0.12), transparent);
+    color: #0891b2;
+    border-right: 3px solid #0891b2;
+    font-weight: 600;
+}
+
+.navIcon {
+    width: 18px;
+    height: 18px;
+    margin-right: 0.875rem;
+    fill: currentColor;
+}
+
+.badge {
+    background: #dc2626;
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    margin-left: auto;
+    min-width: 20px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.badgeSuccess {
+    background: #059669;
+}
+
+.badgeWarning {
+    background: #d97706;
+}
+
+/* ============================================
+   MAIN CONTENT AREA
+============================================ */
+.mainContent {
+    flex: 1;
+    margin-left: 280px;
+    padding: 2rem;
+    overflow-y: auto;
+    transition: margin-left 0.3s ease;
+    background: #f8fafc;
+    min-height: 100vh;
+}
+
+.sidebarCollapsed+.mainContent {
+    margin-left: 0;
+}
+
+/* ============================================
+   HEADER STYLES (Basic structure)
+   Detailed header styles are in AdminHeader.css
+============================================ */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    background: #ffffff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+}
+
+.headerLeft h1 {
+    color: #1e293b;
+    font-weight: 700;
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.headerLeft p {
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+.headerActions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* ============================================
+   BUTTON STYLES
+============================================ */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    border: 2px solid transparent;
+}
+
+.btnOutline {
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    color: #64748b;
+}
+
+.btnOutline:hover {
+    border-color: #0891b2;
+    color: #0891b2;
+    transform: translateY(-1px);
+}
+
+.btnSuccess {
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: white;
+    border: 2px solid #059669;
+}
+
+.btnSuccess:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+.btnDanger {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: white;
+    border: 2px solid #dc2626;
+}
+
+.btnDanger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.btnSecondary {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 2px solid #e2e8f0;
+}
+
+.btnSecondary:hover {
+    background: #e2e8f0;
+    color: #475569;
+    transform: translateY(-1px);
+}
+
+/* ============================================
+   USER INFO (Basic structure)
+   Detailed user info styles are in AdminHeader.css
+============================================ */
+.userInfo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: #f1f5f9;
+    border-radius: 50px;
+    border: 1px solid #e2e8f0;
+}
+
+.userInfo span {
+    color: #475569;
+    font-weight: 500;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0891b2, #0e7490);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    border: 2px solid #ffffff;
+}
+
+/* ============================================
+   STATISTICS GRID
+============================================ */
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.statCard {
+    background: #ffffff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.statCard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+}
+
+.pending::before {
+    background: linear-gradient(90deg, #d97706, #f59e0b);
+}
+
+.approved::before {
+    background: linear-gradient(90deg, #059669, #10b981);
+}
+
+.rejected::before {
+    background: linear-gradient(90deg, #dc2626, #ef4444);
+}
+
+.total::before {
+    background: linear-gradient(90deg, #0891b2, #0e7490);
+}
+
+.statCard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.statHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.statTitle {
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.statIcon {
+    width: 24px;
+    height: 24px;
+    opacity: 0.7;
+}
+
+.statValue {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.75rem;
+    line-height: 1;
+}
+
+.statChange {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+.positive {
+    color: #059669;
+}
+
+.negative {
+    color: #dc2626;
+}
+
+.changeIcon {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+/* ============================================
+   VERIFICATION SECTION
+============================================ */
+.verificationSection {
+    background: #ffffff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 2rem;
+}
+
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.sectionTitle {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.sectionIcon {
+    width: 28px;
+    height: 28px;
+    fill: #0891b2;
+}
+
+.filters {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.filterBtn {
+    padding: 0.5rem 1.25rem;
+    border: 2px solid #e2e8f0;
+    background: #ffffff;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.filterBtn:hover,
+.filterBtn.active {
+    border-color: #0891b2;
+    color: #0891b2;
+    background: rgba(8, 145, 178, 0.05);
+    transform: translateY(-1px);
+}
+
+/* ============================================
+   APPLICATION CARDS
+============================================ */
+.applicationsGrid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.applicationCard {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 2rem;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.applicationCard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    border-color: #0891b2;
+}
+
+.applicationHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+}
+
+.applicantInfo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.applicantAvatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0891b2, #0e7490);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 1.5rem;
+    border: 3px solid #ffffff;
+    box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
+}
+
+.applicantDetails h3 {
+    color: #1e293b;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.applicantDetails p {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.applicationStatus {
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.statusPending {
+    background: rgba(217, 119, 6, 0.1);
+    color: #d97706;
+    border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+.statusApproved {
+    background: rgba(5, 150, 105, 0.1);
+    color: #059669;
+    border: 1px solid rgba(5, 150, 105, 0.2);
+}
+
+.statusRejected {
+    background: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.applicationDetails {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.detailItem {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.detailLabel {
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detailValue {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+/* ============================================
+   DOCUMENTS SECTION
+============================================ */
+.applicationDocuments {
+    margin-bottom: 2rem;
+}
+
+.documentsTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 1rem;
+}
+
+.documentsList {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.documentItem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(8, 145, 178, 0.05);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #0891b2;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(8, 145, 178, 0.2);
+    font-weight: 500;
+}
+
+.documentItem:hover {
+    background: rgba(8, 145, 178, 0.1);
+    transform: translateY(-1px);
+}
+
+/* ============================================
+   APPLICATION ACTIONS
+============================================ */
+.applicationActions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+/* ============================================
+   MODAL STYLES
+============================================ */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    backdrop-filter: blur(4px);
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modalContent {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 500px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.modalTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.modalClose {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #64748b;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.modalClose:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+/* ============================================
+   FORM STYLES
+============================================ */
+.formGroup {
+    margin-bottom: 1.5rem;
+}
+
+.formLabel {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+    color: #1e293b;
+}
+
+.formTextarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 0.75rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: border-color 0.3s ease;
+}
+
+.formTextarea:focus {
+    outline: none;
+    border-color: #0891b2;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+============================================ */
+@media (max-width: 1200px) {
+    .statsGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .applicationDetails {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 992px) {
+    .sidebar {
+        width: 250px;
+    }
+    
+    .mainContent {
+        margin-left: 250px;
+    }
+    
+    .collapsed ~ .mainContent {
+        margin-left: 70px;
+    }
+    
+    .collapsed {
+        width: 70px;
+    }
+    
+    .header {
+        padding: 1.5rem;
+    }
+    
+    .headerLeft h1 {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        position: fixed;
+        left: -100%;
+        top: 0;
+        height: 100vh;
+        z-index: 1001;
+        transition: left 0.3s ease;
+    }
+    
+    .sidebar.open {
+        left: 0;
+    }
+    
+    .mainContent {
+        margin-left: 0;
+        padding: 1rem;
+        width: 100%;
+    }
+    
+    .collapsed ~ .mainContent {
+        margin-left: 0;
+    }
+    
+    /* Mobile Header */
+    .header {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1.5rem 1rem;
+        position: relative;
+    }
+    
+    .headerLeft {
+        text-align: center;
+        width: 100%;
+    }
+    
+    .headerLeft h1 {
+        font-size: 1.4rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .headerActions {
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+        gap: 0.75rem;
+    }
+    
+    .userInfo {
+        order: 1;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* Mobile Menu Button */
+    .mobileMenuBtn {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        background: #0891b2;
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: white;
+        z-index: 1002;
+    }
+    
+    .mobileMenuBtn svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    /* Stats Grid Mobile */
+    .statsGrid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .statCard {
+        padding: 1.5rem;
+    }
+    
+    .statValue {
+        font-size: 2.5rem;
+    }
+    
+    /* Section Header Mobile */
+    .sectionHeader {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .sectionTitle {
+        font-size: 1.25rem;
+    }
+    
+    .filters {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .filterBtn {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    /* Verification Section Mobile */
+    .verificationSection {
+        padding: 1.5rem 1rem;
+    }
+    
+    /* Application Cards Mobile */
+    .applicationCard {
+        padding: 1.5rem;
+    }
+    
+    .applicantAvatar {
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+    }
+    
+    .applicantDetails h3 {
+        font-size: 1rem;
+    }
+    
+    .applicantDetails p {
+        font-size: 0.85rem;
+    }
+    
+    .applicationStatus {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.75rem;
+    }
+    
+    .applicationDetails {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        padding: 1rem;
+    }
+    
+    .applicationActions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.75rem;
+    }
+    
+    /* Documents Mobile */
+    .documentsList {
+        gap: 0.5rem;
+    }
+    
+    .documentItem {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+    }
+    
+    /* Modal Mobile */
+    .modal {
+        padding: 1rem;
+    }
+    
+    .modalContent {
+        padding: 1.5rem;
+        max-height: 90vh;
+    }
+    
+    .modalTitle {
+        font-size: 1.1rem;
+    }
+    
+    /* Overlay for mobile sidebar */
+    .sidebarOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        display: none;
+    }
+    
+    .sidebarOverlay.show {
+        display: block;
+    }
+}
+
+@media (max-width: 576px) {
+    .mainContent {
+        padding: 0.75rem;
+    }
+    
+    .header {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .headerLeft h1 {
+        font-size: 1.2rem;
+    }
+    
+    .statsGrid {
+        gap: 0.75rem;
+    }
+    
+    .statCard {
+        padding: 1.25rem;
+    }
+    
+    .statValue {
+        font-size: 2rem;
+    }
+    
+    .sectionTitle {
+        font-size: 1.1rem;
+    }
+    
+    .verificationSection {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .applicationCard {
+        padding: 1rem;
+    }
+    
+    .applicationHeader {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .applicationStatus {
+        align-self: flex-start;
+    }
+    
+    .filters {
+        gap: 0.4rem;
+    }
+    
+    .filterBtn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+    }
+    
+    .notification {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* ============================================
+   LANDSCAPE MOBILE
+============================================ */
+@media (max-width: 768px) and (orientation: landscape) {
+    .sidebar {
+        width: 250px;
+        left: -250px;
+    }
+    
+    .statsGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .applicationDetails {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ============================================
+   TABLET SPECIFIC
+============================================ */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .sidebar {
+        width: 240px;
+    }
+    
+    .mainContent {
+        margin-left: 240px;
+    }
+    
+    .collapsed ~ .mainContent {
+        margin-left: 70px;
+    }
+    
+    .collapsed {
+        width: 70px;
+    }
+    
+    .statsGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .applicationDetails {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .applicationActions {
+        gap: 0.75rem;
+    }
+}

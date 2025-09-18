@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selamat Datang - Pendaftaran</title>
+    <style>
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn">←</button>
+            <h1 class="title">Selamat Datang</h1>
+        </div>
+        
+        <p class="subtitle">Pertama-tama, siapa nama panggilanmu?</p>
+        
+        <form>
+            <div class="form-group">
+                <label class="form-label">Masukkan Namamu Disini</label>
+                <input type="text" class="form-input" placeholder="Nama lengkap">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-input" placeholder="email@example.com">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-input" placeholder="Masukkan password">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Nomer HP</label>
+                <div class="phone-group">
+                    <input type="text" class="form-input country-code" value="+62" readonly>
+                    <input type="tel" class="form-input phone-input" placeholder="812345678">
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button type="button" class="btn btn-back">
+                    ←
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    Berikutnya
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Add some interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('.form-input');
+            
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.parentElement.classList.add('focused');
+                });
+                
+                input.addEventListener('blur', function() {
+                    this.parentElement.classList.remove('focused');
+                });
+            });
+
+            // Form submission
+            document.querySelector('form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                alert('Form submitted! (Demo)');
+            });
+
+            // Back button functionality
+            document.querySelectorAll('.back-btn, .btn-back').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    alert('Kembali ke halaman sebelumnya (Demo)');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

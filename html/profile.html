@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #000;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background-color: #000;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            margin-right: 20px;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+            flex: 1;
+            text-align: center;
+            margin-right: 44px; /* Balance the back button */
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+            border-right: 1px solid #333;
+            width: 60px;
+            position: fixed;
+            left: 0;
+            top: 80px;
+            height: calc(100vh - 80px);
+        }
+
+        .sidebar-icon {
+            padding: 15px;
+            text-align: center;
+            font-size: 20px;
+            color: #666;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .sidebar-icon:hover {
+            color: #fff;
+        }
+
+        .sidebar-icon.active {
+            color: #fff;
+        }
+
+        .content {
+            margin-left: 60px;
+            padding: 20px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .field-group {
+            margin-bottom: 20px;
+        }
+
+        .field-label {
+            font-size: 14px;
+            color: #fff;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .field-value {
+            font-size: 16px;
+            color: #ccc;
+            padding: 12px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .edit-icon {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+
+        .edit-icon:hover {
+            color: #fff;
+        }
+
+        /* Icons using CSS */
+        .icon-user::before { content: '👤'; }
+        .icon-history::before { content: '🕐'; }
+        .icon-building::before { content: '🏢'; }
+        .icon-edit::before { content: '✏️'; }
+        .icon-back::before { content: '←'; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn icon-back"></button>
+            <h1 class="header-title">Profile</h1>
+        </div>
+
+        <div class="sidebar">
+            <div class="sidebar-icon icon-user active"></div>
+            <div class="sidebar-icon icon-history"></div>
+            <div class="sidebar-icon icon-building"></div>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h2 class="section-title">Account Info</h2>
+                
+                <div class="field-group">
+                    <div class="field-label">
+                        Username: Mas Dicka
+                        <button class="edit-icon icon-edit"></button>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">
+                        Password: ••••••••••••
+                        <button class="edit-icon icon-edit"></button>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">
+                        Email Address: r****@gmail.com
+                        <button class="edit-icon icon-edit"></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Personal</h2>
+                
+                <div class="field-group">
+                    <div class="field-label">Age: 18+</div>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">Birthday: Dec 20, 2004</div>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">Gender(optional)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add click handlers for interactive elements
+        document.querySelector('.back-btn').addEventListener('click', function() {
+            alert('Back button clicked');
+        });
+
+        document.querySelectorAll('.edit-icon').forEach(icon => {
+            icon.addEventListener('click', function() {
+                alert('Edit button clicked');
+            });
+        });
+
+        document.querySelectorAll('.sidebar-icon').forEach(icon => {
+            icon.addEventListener('click', function() {
+                document.querySelectorAll('.sidebar-icon').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

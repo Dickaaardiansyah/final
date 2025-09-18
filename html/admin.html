@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FishMap - Admin Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0891b2 0%, #0e7490 50%, #155e75 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="fish" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23fish)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .background-waves {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, rgba(8, 145, 178, 0.1) 25%, transparent 25%),
+                        linear-gradient(-45deg, rgba(8, 145, 178, 0.1) 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, rgba(14, 116, 144, 0.1) 75%),
+                        linear-gradient(-45deg, transparent 75%, rgba(14, 116, 144, 0.1) 75%);
+            background-size: 30px 30px;
+            background-position: 0 0, 0 15px, 15px -15px, -15px 0px;
+            animation: wave 20s linear infinite;
+        }
+
+        @keyframes wave {
+            0% { transform: translateX(0) translateY(0); }
+            100% { transform: translateX(-30px) translateY(-30px); }
+        }
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 32px 64px rgba(8, 145, 178, 0.15),
+                        0 16px 32px rgba(14, 116, 144, 0.1),
+                        0 0 0 1px rgba(255, 255, 255, 0.1);
+            padding: 48px 40px;
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+            z-index: 2;
+            border: 1px solid rgba(8, 145, 178, 0.1);
+        }
+
+
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .logo {
+            width: 88px;
+            height: 88px;
+            background: linear-gradient(135deg, #0891b2, #0e7490);
+            border-radius: 22px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            box-shadow: 0 16px 32px rgba(8, 145, 178, 0.25),
+                        0 8px 16px rgba(8, 145, 178, 0.15);
+            animation: float 4s ease-in-out infinite;
+            position: relative;
+        }
+
+        .logo::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            background: linear-gradient(135deg, #0891b2, #0e7490, #155e75);
+            border-radius: 24px;
+            z-index: -1;
+            opacity: 0.3;
+            filter: blur(8px);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
+        }
+
+        .logo svg {
+            width: 48px;
+            height: 48px;
+            fill: white;
+        }
+
+        .welcome-text {
+            color: #1e293b;
+            margin-bottom: 16px;
+        }
+
+        .welcome-text h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #0891b2, #0e7490);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-text p {
+            color: #64748b;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 28px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: #1e293b;
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 0.025em;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 16px 52px 16px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.8);
+            color: #1e293b;
+        }
+
+        .input-wrapper input::placeholder {
+            color: #94a3b8;
+        }
+
+        .input-wrapper input:focus {
+            outline: none;
+            border-color: #0891b2;
+            box-shadow: 0 0 0 4px rgba(8, 145, 178, 0.12);
+            background: white;
+            transform: scale(1.01);
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            width: 20px;
+            height: 20px;
+            transition: color 0.3s ease;
+        }
+
+        .input-wrapper input:focus + .input-icon {
+            color: #0891b2;
+        }
+
+        .password-toggle {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .password-toggle:hover {
+            color: #0891b2;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .forgot-password {
+            text-align: right;
+            margin-bottom: 32px;
+        }
+
+        .forgot-password a {
+            color: #0891b2;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .forgot-password a:hover {
+            color: #0e7490;
+            text-decoration: underline;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 18px 24px;
+            background: linear-gradient(135deg, #0891b2, #0e7490);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.025em;
+            box-shadow: 0 8px 16px rgba(8, 145, 178, 0.25);
+        }
+
+        .login-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.6s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 32px rgba(8, 145, 178, 0.35);
+            background: linear-gradient(135deg, #0e7490, #155e75);
+        }
+
+        .login-btn:hover::before {
+            left: 100%;
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-btn.loading {
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top: 2px solid white;
+            border-right: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 12px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .divider {
+            text-align: center;
+            margin: 36px 0;
+            position: relative;
+            color: #94a3b8;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+            z-index: 1;
+        }
+
+        .divider span {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 0 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .security-info {
+            background: linear-gradient(135deg, rgba(8, 145, 178, 0.05), rgba(14, 116, 144, 0.05));
+            border: 2px solid rgba(8, 145, 178, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 24px;
+            font-size: 14px;
+            color: #475569;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .security-info .icon {
+            color: #0891b2;
+            margin-right: 8px;
+            font-size: 16px;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #fef2f2, #fee2e2);
+            color: #dc2626;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 2px solid #fecaca;
+            display: none;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            color: #16a34a;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 2px solid #bbf7d0;
+            display: none;
+            animation: slideUp 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        @keyframes slideUp {
+            0% { transform: translateY(20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        .fishmap-branding {
+            position: absolute;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 1;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 36px 24px;
+                margin: 16px;
+                border-radius: 20px;
+            }
+            
+            .welcome-text h1 {
+                font-size: 28px;
+            }
+            
+            .logo {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .logo svg {
+                width: 40px;
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-section">
+            <div class="logo">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2c5.4 0 10 4.6 10 10 0 5.4-4.6 10-10 10S2 17.4 2 12 6.6 2 12 2zm-1 17.93c3.94-.49 7-3.85 7-7.93 0-.62-.08-1.21-.21-1.79L9 10v1c0 1.1-.9 2-2 2s-2-.9-2-2V9c0-1.1.9-2 2-2s2 .9 2 2v.17l8.79-.21C17.21 8.34 16.62 8.26 16 8.26c-4.08 0-7.44 3.06-7.93 7H9c-.55 0-1 .45-1 1s.45 1 1 1h-.93z"/>
+                </svg>
+            </div>
+            <div class="welcome-text">
+                <h1>FishMap Admin</h1>
+                <p>Sistem Verifikasi Penjual Ikan</p>
+            </div>
+        </div>
+
+        <div class="error-message" id="errorMessage">
+            <strong>⚠️ Login Gagal!</strong> Email atau password tidak valid. Silakan periksa kembali kredensial Anda.
+        </div>
+
+        <div class="success-message" id="successMessage">
+            <strong>✅ Login Berhasil!</strong> Mengalihkan ke dashboard verifikasi...
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email Admin</label>
+                <div class="input-wrapper">
+                    <input type="email" id="email" name="email" placeholder="admin@fishmap.com" required>
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 8L10.89 13.26C11.2 13.47 11.8 13.47 12.11 13.26L20 8M5 19H19C20.1 19 21 18.1 21 17V7C21 5.9 20.1 5 19 5H5C3.9 5 3 5.9 3 7V17C3 18.1 3.9 19 5 19Z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-wrapper">
+                    <input type="password" id="password" name="password" placeholder="Masukkan password admin" required>
+                    <svg class="input-icon password-toggle" id="togglePassword" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12C2.73 16.39 7 19.5 12 19.5S21.27 16.39 23 12C21.27 7.61 17 4.5 12 4.5ZM12 17C9.24 17 7 14.76 7 12S9.24 7 12 7S17 9.24 17 12S14.76 17 12 17ZM12 9C10.34 9 9 10.34 9 12S10.34 15 12 15S15 13.66 15 12S13.66 9 12 9Z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="forgot-password">
+                <a href="#" id="forgotPasswordLink">Lupa password?</a>
+            </div>
+
+            <button type="submit" class="login-btn" id="loginBtn">
+                <span class="spinner" id="spinner"></span>
+                <span id="btnText">Masuk ke Dashboard</span>
+            </button>
+        </form>
+
+        <div class="divider">
+            <span>Akses Aman & Terenkripsi</span>
+        </div>
+
+        <div class="security-info">
+            <span class="icon">🐟</span>
+            <strong>FishMap Admin Portal</strong> - Platform terpercaya untuk verifikasi penjual ikan dengan keamanan SSL 256-bit
+        </div>
+    </div>
+
+    <div class="fishmap-branding">
+        FishMap © 2025 - Menghubungkan Penjual & Pembeli Ikan
+    </div>
+
+    <script>
+        // Toggle password visibility
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
+        
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            // Change icon with animation
+            this.style.transform = 'translateY(-50%) scale(0.8)';
+            setTimeout(() => {
+                if (type === 'text') {
+                    this.innerHTML = '<path d="M2 4.27L3.28 3L20 19.72L18.73 21L15.65 17.92C14.5 18.3 13.28 18.5 12 18.5C7 18.5 2.73 15.39 1 11C1.69 9.24 2.79 7.69 4.19 6.46L2 4.27ZM12 6.5C15.79 6.5 19.17 8.63 20.82 12C20.23 13.33 19.29 14.53 18.09 15.5L16.58 14C17.25 13.16 17.58 12.13 17.58 11C17.58 8.24 15.34 6 12.58 6C11.45 6 10.42 6.33 9.58 7L8.07 5.5C9.5 4.95 10.72 4.5 12 4.5Z"/>';
+                } else {
+                    this.innerHTML = '<path d="M12 4.5C7 4.5 2.73 7.61 1 12C2.73 16.39 7 19.5 12 19.5S21.27 16.39 23 12C21.27 7.61 17 4.5 12 4.5ZM12 17C9.24 17 7 14.76 7 12S9.24 7 12 7S17 9.24 17 12S14.76 17 12 17ZM12 9C10.34 9 9 10.34 9 12S10.34 15 12 15S15 13.66 15 12S13.66 9 12 9Z"/>';
+                }
+                this.style.transform = 'translateY(-50%) scale(1)';
+            }, 150);
+        });
+
+        // Form submission
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const btnText = document.getElementById('btnText');
+        const spinner = document.getElementById('spinner');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Hide previous messages
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            
+            // Show loading state
+            loginBtn.classList.add('loading');
+            spinner.style.display = 'inline-block';
+            btnText.textContent = 'Memverifikasi...';
+            loginBtn.disabled = true;
+            
+            // Get form data
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            // Simulate login process
+            setTimeout(() => {
+                // Demo credentials untuk FishMap admin
+                if (email === 'admin@fishmap.com' && password === 'fishmap2025') {
+                    successMessage.style.display = 'block';
+                    btnText.textContent = 'Berhasil! Mengalihkan...';
+                    
+                    // Redirect after success
+                    setTimeout(() => {
+                        alert('🐟 Login berhasil! Selamat datang di FishMap Admin Dashboard.\n\nAnda akan diarahkan ke halaman verifikasi penjual ikan.');
+                        // window.location.href = 'dashboard.html'; // Uncomment untuk redirect nyata
+                        resetForm();
+                    }, 2000);
+                } else {
+                    errorMessage.style.display = 'block';
+                    resetForm();
+                }
+            }, 2500);
+        });
+
+        function resetForm() {
+            loginBtn.classList.remove('loading');
+            spinner.style.display = 'none';
+            btnText.textContent = 'Masuk ke Dashboard';
+            loginBtn.disabled = false;
+        }
+
+        // Forgot password handler
+        document.getElementById('forgotPasswordLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('🔐 Fitur reset password akan segera tersedia!\n\nUntuk saat ini, silakan hubungi super admin FishMap di:\n📧 support@fishmap.com\n📱 +62-800-FISHMAP');
+        });
+
+        // Enhanced input interactions
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'scale(1.02)';
+                this.parentElement.style.zIndex = '10';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'scale(1)';
+                this.parentElement.style.zIndex = 'auto';
+            });
+
+            // Add typing effect
+            input.addEventListener('input', function() {
+                if (this.value.length > 0) {
+                    this.style.background = 'white';
+                } else {
+                    this.style.background = 'rgba(255, 255, 255, 0.8)';
+                }
+            });
+        });
+
+        // Add some fish swimming animation effect
+        function createFish() {
+            const fish = document.createElement('div');
+            fish.innerHTML = '🐟';
+            fish.style.position = 'fixed';
+            fish.style.fontSize = '20px';
+            fish.style.opacity = '0.3';
+            fish.style.zIndex = '1';
+            fish.style.pointerEvents = 'none';
+            fish.style.right = '-50px';
+            fish.style.top = Math.random() * window.innerHeight + 'px';
+            fish.style.animation = `swim ${8 + Math.random() * 4}s linear`;
+            
+            document.body.appendChild(fish);
+            
+            setTimeout(() => {
+                if (fish.parentElement) {
+                    fish.remove();
+                }
+            }, 12000);
+        }
+
+        // Add swimming animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes swim {
+                0% { transform: translateX(0) scale(1); }
+                25% { transform: translateX(-25vw) scale(1.2) rotateY(0deg); }
+                50% { transform: translateX(-50vw) scale(1) rotateY(180deg); }
+                75% { transform: translateX(-75vw) scale(1.2) rotateY(180deg); }
+                100% { transform: translateX(-100vw) scale(1) rotateY(180deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Create swimming fish occasionally
+        setInterval(createFish, 8000);
+        
+        // Create initial fish
+        setTimeout(createFish, 2000);
+    </script>
+</body>
+</html>

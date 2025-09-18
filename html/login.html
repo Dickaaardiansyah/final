@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - FishSnap AI</title>
+    <style>
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">Login</h1>
+        
+        <div class="form-container">
+            <div class="form-group">
+                <label class="form-label">Masukkan Namamu Disini</label>
+                <input type="text" class="form-input" id="username" placeholder="Username atau email">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-input" id="password" placeholder="Masukkan password">
+            </div>
+            
+            <label class="checkbox-container">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" class="checkbox" id="terms">
+                </div>
+                <span class="checkbox-text">
+                    Saya menyetujui <a href="#" onclick="showTerms()">Syarat dan ketentuan</a> 
+                    dan <a href="#" onclick="showPrivacy()">kebijakan Privasi</a> FishSnap:AI
+                </span>
+            </label>
+            
+            <button class="login-btn" onclick="handleLogin()" id="loginBtn">
+                LOGIN
+            </button>
+        </div>
+        
+        <p class="register-link">
+            Belum Punya akun? <a href="#" onclick="goToRegister()">Register Disini</a>
+        </p>
+    </div>
+
+    <script>
+        // Form validation and interaction
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const termsCheckbox = document.getElementById('terms');
+        const loginBtn = document.getElementById('loginBtn');
+
+        function validateForm() {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+            const termsAccepted = termsCheckbox.checked;
+            
+            if (username && password && termsAccepted) {
+                loginBtn.disabled = false;
+            } else {
+                loginBtn.disabled = true;
+            }
+        }
+
+        // Add event listeners for real-time validation
+        usernameInput.addEventListener('input', validateForm);
+        passwordInput.addEventListener('input', validateForm);
+        termsCheckbox.addEventListener('change', validateForm);
+
+        // Handle login
+        function handleLogin() {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+            
+            if (!username || !password) {
+                alert('Mohon lengkapi username dan password');
+                return;
+            }
+            
+            if (!termsCheckbox.checked) {
+                alert('Mohon setujui syarat dan ketentuan terlebih dahulu');
+                return;
+            }
+            
+            // Simulate login process
+            loginBtn.textContent = 'LOGGING IN...';
+            loginBtn.disabled = true;
+            
+            setTimeout(() => {
+                alert('Login berhasil!\nUsername: ' + username);
+                loginBtn.textContent = 'LOGIN';
+                loginBtn.disabled = false;
+            }, 1500);
+        }
+
+        // Handle Enter key press
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !loginBtn.disabled) {
+                handleLogin();
+            }
+        });
+
+        // Navigation functions
+        function goToRegister() {
+            alert('Menuju halaman registrasi...');
+        }
+
+        function showTerms() {
+            alert('Menampilkan Syarat dan Ketentuan FishSnap:AI');
+        }
+
+        function showPrivacy() {
+            alert('Menampilkan Kebijakan Privasi FishSnap:AI');
+        }
+
+        // Initialize form validation on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            validateForm();
+            usernameInput.focus();
+        });
+    </script>
+</body>
+</html>

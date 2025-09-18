@@ -1,0 +1,141 @@
+/* Additional styles untuk EmptyState.jsx yang lebih modern */
+
+.empty-features {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    color: #475569;
+    font-weight: 500;
+  }
+  
+  .feature-item svg {
+    color: #3b82f6;
+    background: #dbeafe;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    flex-shrink: 0;
+  }
+  
+  .empty-action {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border: none;
+    padding: 0.875rem 2rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  }
+  
+  .empty-action:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
+  }
+  
+  .empty-action:active {
+    transform: translateY(-1px);
+  }
+  
+  .empty-icon {
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #3b82f6;
+    margin-bottom: 2rem;
+    border: 3px solid white;
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.1);
+  }
+  
+  /* Override untuk style yang sudah ada agar lebih modern */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+    background: white;
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+    margin: 2rem 0;
+    min-height: 500px;
+  }
+  
+  .empty-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 1rem 0;
+  }
+  
+  .empty-description {
+    font-size: 1rem;
+    color: #64748b;
+    line-height: 1.6;
+    margin: 0;
+    max-width: 500px;
+  }
+  
+  /* Responsive untuk empty state */
+  @media (max-width: 768px) {
+    .empty-state {
+      padding: 2rem 1rem;
+      margin: 1rem 0;
+      min-height: 400px;
+    }
+    
+    .empty-icon {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 1.5rem;
+    }
+    
+    .empty-icon svg {
+      width: 36px !important;
+      height: 36px !important;
+    }
+    
+    .empty-title {
+      font-size: 1.25rem;
+    }
+    
+    .empty-description {
+      font-size: 0.875rem;
+    }
+    
+    .empty-features {
+      margin: 1rem 0;
+      padding: 1rem;
+    }
+    
+    .feature-item {
+      font-size: 0.8rem;
+    }
+    
+    .empty-action {
+      padding: 0.75rem 1.5rem;
+      font-size: 0.8rem;
+    }
+  }

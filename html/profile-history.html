@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #000;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background-color: #000;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            margin-right: 20px;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+            flex: 1;
+            text-align: center;
+            margin-right: 44px; /* Balance the back button */
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+            border-right: 1px solid #333;
+            width: 60px;
+            position: fixed;
+            left: 0;
+            top: 80px;
+            height: calc(100vh - 80px);
+        }
+
+        .sidebar-icon {
+            padding: 15px;
+            text-align: center;
+            font-size: 20px;
+            color: #666;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .sidebar-icon:hover {
+            color: #fff;
+        }
+
+        .sidebar-icon.active {
+            color: #fff;
+        }
+
+        .content {
+            margin-left: 60px;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 120px);
+            text-align: center;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            border: 3px solid #333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .clock-icon {
+            font-size: 32px;
+            color: #666;
+        }
+
+        .empty-message {
+            font-size: 16px;
+            color: #ccc;
+            font-weight: 400;
+        }
+
+        /* Icons using CSS */
+        .icon-user::before { content: '👤'; }
+        .icon-history::before { content: '🕐'; }
+        .icon-building::before { content: '🏢'; }
+        .icon-back::before { content: '←'; }
+
+        /* Clock icon styling */
+        .clock-icon::before {
+            content: '🕐';
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                max-width: 100%;
+            }
+            
+            .content {
+                margin-left: 0;
+                padding: 60px 20px 40px;
+            }
+            
+            .sidebar {
+                position: static;
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                justify-content: center;
+                border-right: none;
+                border-bottom: 1px solid #333;
+            }
+            
+            .sidebar-icon {
+                flex: 1;
+                max-width: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn icon-back"></button>
+            <h1 class="header-title">History</h1>
+        </div>
+
+        <div class="sidebar">
+            <div class="sidebar-icon icon-user"></div>
+            <div class="sidebar-icon icon-history active"></div>
+            <div class="sidebar-icon icon-building"></div>
+        </div>
+
+        <div class="content">
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <div class="clock-icon"></div>
+                </div>
+                <div class="empty-message">Oops, You still have no History</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add click handlers for interactive elements
+        document.querySelector('.back-btn').addEventListener('click', function() {
+            alert('Back button clicked');
+        });
+
+        document.querySelectorAll('.sidebar-icon').forEach(icon => {
+            icon.addEventListener('click', function() {
+                document.querySelectorAll('.sidebar-icon').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                
+                // You can add navigation logic here
+                if (this.classList.contains('icon-user')) {
+                    alert('Navigate to Profile');
+                } else if (this.classList.contains('icon-history')) {
+                    alert('You are already on History page');
+                } else if (this.classList.contains('icon-building')) {
+                    alert('Navigate to Building/Organization page');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

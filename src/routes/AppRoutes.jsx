@@ -2,7 +2,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AdminAuthProvider } from "../components/admin/auth/AdminAuthContext";
 import ProtectedAdminRoute from "../components/admin/auth/ProtectedAdminRoute";
 
-import Layout from "../components/layout/Layout";
+import Layout from "../components/Layout/Layout";
+
 import NotFound from "../components/NotFound";
 
 // Pages

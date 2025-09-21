@@ -1,0 +1,23 @@
+{
+  "name": "Fishmap AI",
+  "short_name": "Fishmap",
+  "description": "Aplikasi monitoring ikan & cuaca untuk nelayan",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0d1b2a",
+  "icons": [
+    {
+      "src": "/icons/icon-192.jpeg",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

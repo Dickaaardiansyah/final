@@ -3,7 +3,6 @@ import Navbar from '../components/Navbar';
 import Hero from '../components/Home/Hero';
 import Gallery from '../components/Home/Galeri';
 import Weather from '../components/Home/Cuaca';
-import Contact from '../components/Home/Kontak';
 import '../styles/main.css';
 
 function Home() {
@@ -13,7 +12,7 @@ function Home() {
       <Hero />
       <Gallery />
       <Weather />
-      <Contact />
+      {/* <Contact /> */}
     </div>
   );
 }

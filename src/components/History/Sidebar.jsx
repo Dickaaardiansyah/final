@@ -10,7 +10,6 @@ function Sidebar() {
   function getActiveItemFromPath(pathname) {
     if (pathname.includes('profile') || pathname.includes('profil')) return 'profile';
     if (pathname.includes('history')) return 'history';
-    if (pathname.includes('marketplace')) return 'marketplace';
     return 'history';
   }
 
@@ -27,12 +26,6 @@ function Sidebar() {
       label: 'History',
       path: '/history'
     },
-    {
-      id: 'marketplace',
-      icon: <ShoppingBag size={20} />,
-      label: 'Marketplace',
-      path: '/marketplace'
-    }
   ];
 
   const handleItemClick = (id, path) => {

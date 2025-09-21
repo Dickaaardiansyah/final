@@ -151,7 +151,7 @@ function Navbar() {
             <span>Fishmap AI</span>
           </div>
           <ul className="nav-menu">
-            {['home', 'katalog', 'galeri', 'cuaca', 'kontak'].map((id) => (
+            {['home', 'galeri', 'cuaca', 'kontak'].map((id) => (
               <li key={id}>
                 <a href={`#${id}`} onClick={(e) => handleNavClick(e, `#${id}`)}>
                   {id.charAt(0).toUpperCase() + id.slice(1)}
@@ -176,7 +176,7 @@ function Navbar() {
           <span>Fishmap AI</span>
         </div>
         <ul className="nav-menu">
-          {['home', 'katalog', 'galeri', 'cuaca', 'kontak'].map((id) => (
+          {['home', 'galeri', 'cuaca', 'kontak'].map((id) => (
             <li key={id}>
               <a href={`#${id}`} onClick={(e) => handleNavClick(e, `#${id}`)}>
                 {id.charAt(0).toUpperCase() + id.slice(1)}

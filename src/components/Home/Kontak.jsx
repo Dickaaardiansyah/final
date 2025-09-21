@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import "../../styles/main.css";
 
 function Kontak() {
+  // State untuk input formulir dan pesan konfirmasi
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -10,15 +11,18 @@ function Kontak() {
   });
   const [submitMessage, setSubmitMessage] = useState("");
 
+  // Handler untuk perubahan input
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handler untuk submit formulir
   const handleSubmit = () => {
+    // Simulasi pengiriman formulir (ganti dengan logika API jika diperlukan)
     setSubmitMessage("Terima kasih! Pesan Anda telah dikirim.");
     setFormData({ name: "", email: "", subject: "", message: "" });
-    setTimeout(() => setSubmitMessage(""), 3000);
+    setTimeout(() => setSubmitMessage(""), 3000); // Hapus pesan setelah 3 detik
   };
 
   return (
@@ -27,7 +31,8 @@ function Kontak() {
         <h2 className="contact-title">Hubungi Kami</h2>
         <div className="contact-divider"></div>
         <p className="contact-subtitle">
-          Kami siap membantu dengan pertanyaan atau informasi yang dibutuhkan.
+          Kami siap membantu Anda dengan pertanyaan atau informasi yang
+          dibutuhkan. Kirim pesan atau kunjungi kami!
         </p>
         <div className="contact-grid">
           <div className="contact-form-container">
@@ -42,7 +47,7 @@ function Kontak() {
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    placeholder="Nama Anda"
+                    placeholder="Masukkan nama Anda"
                   />
                 </div>
                 <div className="form-group">
@@ -53,7 +58,7 @@ function Kontak() {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="Email Anda"
+                    placeholder="Masukkan email Anda"
                   />
                 </div>
                 <div className="form-group">
@@ -64,7 +69,7 @@ function Kontak() {
                     name="subject"
                     value={formData.subject}
                     onChange={handleInputChange}
-                    placeholder="Subjek"
+                    placeholder="Masukkan subjek"
                   />
                 </div>
                 <div className="form-group">
@@ -74,11 +79,11 @@ function Kontak() {
                     name="message"
                     value={formData.message}
                     onChange={handleInputChange}
-                    placeholder="Pesan Anda"
-                    rows="4"
+                    placeholder="Tulis pesan Anda"
+                    rows="5"
                   ></textarea>
                 </div>
-                <button onClick={handleSubmit}>Kirim</button>
+                <button onClick={handleSubmit}>Kirim Pesan</button>
               </div>
               {submitMessage && (
                 <p className="submit-message">{submitMessage}</p>

@@ -7,14 +7,11 @@ import NotFound from "../components/NotFound";
 
 // Pages
 import Home from "../pages/Home";
-import Toko from "../pages/Toko";
 import Register from "../pages/Register";
 import Login from "../pages/Login";
 import Scan from "../pages/Scan";
 import Profile from "../pages/Profile";
 import History from "../pages/History";
-import Marketplace from "../pages/Marketplace";
-import AddKatalogPage from "../pages/AddKatalogPage";
 
 // Admin Pages
 import Dashboard from "../pages/admin/Dashboard";
@@ -39,7 +36,6 @@ export function AppRoutes() {
           {/* Semua halaman utama dibungkus Layout */}
           <Route element={<Layout />}>
             <Route path="/" element={<Home />} />
-            <Route path="/toko" element={<Toko />} />
             <Route path="/scan" element={<Scan />} />
           </Route>
 
@@ -47,106 +43,96 @@ export function AppRoutes() {
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/profil" element={<Profile />} />
-          <Route path="/history" element={<History/>} />
-          <Route path="/marketplace" element={<Marketplace/>} />
-          <Route path="/katalog/tambah" element={<AddKatalogPage />} />
-          
-          {/* Route untuk direct catalog registration */}
-          <Route 
-            path="/katalog/daftar" 
-            element={
-              <Marketplace catalogRegistrationMode={true} />
-            } 
-          />
-          
+          <Route path="/history" element={<History />} />
+
           {/* Admin Routes - Protected */}
           <Route path="/admin/login" element={<AdminLogin />} />
-          
+
           {/* Main Dashboard */}
-          <Route 
-            path="/admin/dashboard" 
+          <Route
+            path="/admin/dashboard"
             element={
               <ProtectedAdminRoute>
                 <Dashboard />
               </ProtectedAdminRoute>
-            } 
+            }
           />
-          
+
           {/* Verification Management Routes */}
-          <Route 
-            path="/admin/pending-verification" 
+          <Route
+            path="/admin/pending-verification"
             element={
               <ProtectedAdminRoute>
                 <PendingVerification />
               </ProtectedAdminRoute>
-            } 
+            }
           />
 
-          <Route 
-            path="/admin/approved" 
+          <Route
+            path="/admin/approved"
             element={
               <ProtectedAdminRoute>
                 <Approved />
               </ProtectedAdminRoute>
-            } 
+            }
           />
 
-          <Route 
-            path="/admin/rejected" 
+          <Route
+            path="/admin/rejected"
             element={
               <ProtectedAdminRoute>
                 <Rejected />
               </ProtectedAdminRoute>
-            } 
+            }
           />
 
           {/* Fish Sellers Management */}
-          <Route 
-            path="/admin/fish-sellers" 
+          <Route
+            path="/admin/fish-sellers"
             element={
               <ProtectedAdminRoute>
                 <FishSellers />
               </ProtectedAdminRoute>
-            } 
+            }
           />
 
           {/* Reports */}
-          <Route 
-            path="/admin/reports" 
+          <Route
+            path="/admin/reports"
             element={
               <ProtectedAdminRoute>
                 <Reports />
               </ProtectedAdminRoute>
-            } 
+            }
           />
 
           {/* Settings */}
-          <Route 
-            path="/admin/settings" 
+          <Route
+            path="/admin/settings"
             element={
               <ProtectedAdminRoute>
                 <Settings />
               </ProtectedAdminRoute>
-            } 
+            }
           />
-          
+
           {/* Admin routes dengan role-based access (jika diperlukan nanti) */}
-          <Route 
-            path="/admin/seller-requests" 
+          <Route
+            path="/admin/seller-requests"
             element={
               <ProtectedAdminRoute requiredRole="seller_verifier">
                 <PendingVerification />
               </ProtectedAdminRoute>
-            } 
+            }
           />
 
-          <Route 
-            path="/admin/manage-admins" 
+          <Route
+            path="/admin/manage-admins"
             element={
               <ProtectedAdminRoute requiredRole="super_admin">
                 <Settings />
               </ProtectedAdminRoute>
-            } 
+            }
           />
 
           {/* 404 page */}

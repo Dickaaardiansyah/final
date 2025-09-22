@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getCurrentUser, logoutUser } from '../data/userLogin'; // Import API functions
-import logo from '../assets/sea logo.png'; // Impor gambar logo
+import { getCurrentUser, logoutUser } from '../data/userLogin';
+import logo from '../assets/sea logo.png';
 
 function Navbar() {
   const navigate = useNavigate();
@@ -10,7 +10,9 @@ function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // New state for mobile menu
   const dropdownRef = useRef(null);
+  const mobileMenuRef = useRef(null); // New ref for mobile menu
 
   // Check login status saat component mount dan listen to events
   useEffect(() => {
@@ -35,16 +37,14 @@ function Navbar() {
       }
     };
 
-    // Check initial status
     checkLoginStatus();
 
-    // Listen for custom login/logout events
     const handleLoginEvent = (e) => {
       if (e.detail?.user) {
         setIsLoggedIn(true);
         setUser(e.detail.user);
       } else {
-        checkLoginStatus(); // Re-check from server
+        checkLoginStatus();
       }
     };
 
@@ -64,6 +64,8 @@ function Navbar() {
 
   const handleNavClick = (e, targetId) => {
     e.preventDefault();
+    setIsMobileMenuOpen(false); // Close mobile menu when clicking nav item
+    
     if (location.pathname === '/') {
       const targetElement = document.querySelector(targetId);
       if (targetElement) {
@@ -81,37 +83,34 @@ function Navbar() {
 
   const handleLoginClick = () => {
     setShowDropdown(false);
+    setIsMobileMenuOpen(false); // Close mobile menu
     navigate('/login');
   };
 
   const handleRegisterClick = () => {
     setShowDropdown(false);
+    setIsMobileMenuOpen(false); // Close mobile menu
     navigate('/register');
   };
 
   const handleProfilePageClick = () => {
     setShowDropdown(false);
+    setIsMobileMenuOpen(false); // Close mobile menu
     navigate('/profil');
   };
 
   const handleLogoutClick = async () => {
     setShowDropdown(false);
+    setIsMobileMenuOpen(false); // Close mobile menu
     
     try {
-      // Call logout API to clear server-side cookies
       const result = await logoutUser();
       
       if (result.success) {
-        // Update state
         setIsLoggedIn(false);
         setUser(null);
-        
-        // Trigger custom event untuk components lain
         window.dispatchEvent(new Event('userLoggedOut'));
-        
-        // Navigate to home
         navigate('/');
-        
         alert('Anda telah logout');
       } else {
         alert('Logout gagal, coba lagi');
@@ -122,11 +121,23 @@ function Navbar() {
     }
   };
 
-  // Close dropdown when clicking outside
+  // New function to toggle mobile menu
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+    setShowDropdown(false); // Close dropdown when opening mobile menu
+  };
+
+  // Close dropdowns when clicking outside - Updated to include mobile menu
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowDropdown(false);
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        const hamburgerButton = document.querySelector('.hamburger-button');
+        if (hamburgerButton && !hamburgerButton.contains(event.target)) {
+          setIsMobileMenuOpen(false);
+        }
       }
     };
 
@@ -136,12 +147,12 @@ function Navbar() {
     };
   }, []);
 
-  // Close dropdown when route changes
+  // Close menus when route changes - Updated to include mobile menu
   useEffect(() => {
     setShowDropdown(false);
+    setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // Show loading state
   if (loading) {
     return (
       <nav className="navbar">
@@ -150,16 +161,6 @@ function Navbar() {
             <img src={logo} alt="Fishmap AI" style={{ height: '40px', width: 'auto', marginRight: '8px' }} />
             <span>Fishmap AI</span>
           </div>
-          <ul className="nav-menu">
-            {['home', 'galeri', 'cuaca', 'kontak'].map((id) => (
-              <li key={id}>
-                <a href={`#${id}`} onClick={(e) => handleNavClick(e, `#${id}`)}>
-                  {id.charAt(0).toUpperCase() + id.slice(1)}
-                </a>
-              </li>
-            ))}
-          </ul>
-          
           <div style={{ color: 'white', fontSize: '14px' }}>
             Loading...
           </div>
@@ -171,11 +172,14 @@ function Navbar() {
   return (
     <nav className="navbar">
       <div className="nav-container">
+        {/* Logo */}
         <div className="logo" onClick={() => navigate('/')}>
-          <img src={logo} alt="Fishmap AI" style={{ height: '40px', width: 'auto', marginRight: '8px', cursor: 'pointer' }} />
+          <img src={logo} alt="Fishmap AI" style={{ height: '40px', width: 'auto', cursor: 'pointer', marginRight: '8px' }} />
           <span>Fishmap AI</span>
         </div>
-        <ul className="nav-menu">
+
+        {/* Desktop Navigation Menu */}
+        <ul className="nav-menu desktop-only">
           {['home', 'galeri', 'cuaca', 'kontak'].map((id) => (
             <li key={id}>
               <a href={`#${id}`} onClick={(e) => handleNavClick(e, `#${id}`)}>
@@ -184,180 +188,479 @@ function Navbar() {
             </li>
           ))}
         </ul>
-        
-        {/* Conditional Rendering berdasarkan login status */}
-        {!isLoggedIn ? (
-          // Not logged in - show Login/Register buttons
-          <div className="auth-buttons">
-            <button 
-              onClick={handleLoginClick}
-              style={{
-                padding: '8px 16px',
-                marginRight: '8px',
-                backgroundColor: 'transparent',
-                color: 'white',
-                border: '1px solid white',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                transition: 'all 0.3s'
-              }}
-              onMouseOver={(e) => {
-                e.target.style.backgroundColor = 'white';
-                e.target.style.color = '#333';
-              }}
-              onMouseOut={(e) => {
-                e.target.style.backgroundColor = 'transparent';
-                e.target.style.color = 'white';
-              }}
-            >
-              Login
-            </button>
-            <button 
-              onClick={handleRegisterClick}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: 'white',
-                color: '#333',
-                border: '1px solid white',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                transition: 'all 0.3s'
-              }}
-              onMouseOver={(e) => {
-                e.target.style.backgroundColor = '#f0f0f0';
-              }}
-              onMouseOut={(e) => {
-                e.target.style.backgroundColor = 'white';
-              }}
-            >
-              Register
-            </button>
-          </div>
-        ) : (
-          // Logged in - show Profile dropdown
-          <div className="profile-dropdown" ref={dropdownRef}>
-            <div 
-              className="user-profile" 
-              onClick={handleProfileClick}
-              style={{ 
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                cursor: 'pointer',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                transition: 'background-color 0.3s',
-                backgroundColor: showDropdown ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
-              }}
-            >
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                backgroundColor: '#4a90e2',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }}>
-                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-              </div>
-              <span style={{ color: 'white', fontSize: '14px' }}>
-                {user?.name || 'User'}
-              </span>
-              <span style={{ 
-                color: 'white', 
-                fontSize: '12px', 
-                transform: showDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
-                transition: 'transform 0.3s'
-              }}>
-                ▼
-              </span>
-            </div>
-            
-            {/* Dropdown Menu untuk User yang sudah login */}
-            {showDropdown && (
-              <div 
-                className="dropdown-menu"
+
+        {/* Desktop Auth Section */}
+        <div className="desktop-auth desktop-only">
+          {!isLoggedIn ? (
+            <div className="auth-buttons">
+              <button 
+                onClick={handleLoginClick}
                 style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: '0',
-                  backgroundColor: 'white',
-                  border: '1px solid #e0e0e0',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                  minWidth: '200px',
-                  zIndex: 1000,
-                  marginTop: '8px',
-                  overflow: 'hidden'
+                  padding: '8px 16px',
+                  marginRight: '8px',
+                  backgroundColor: 'transparent',
+                  color: 'white',
+                  border: '1px solid white',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  transition: 'all 0.3s'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.backgroundColor = 'white';
+                  e.target.style.color = '#333';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.backgroundColor = 'transparent';
+                  e.target.style.color = 'white';
                 }}
               >
+                Login
+              </button>
+              <button 
+                onClick={handleRegisterClick}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: 'white',
+                  color: '#333',
+                  border: '1px solid white',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  transition: 'all 0.3s'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.backgroundColor = '#f0f0f0';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.backgroundColor = 'white';
+                }}
+              >
+                Register
+              </button>
+            </div>
+          ) : (
+            <div className="profile-dropdown" ref={dropdownRef}>
+              <div 
+                className="user-profile" 
+                onClick={handleProfileClick}
+                style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  transition: 'background-color 0.3s',
+                  backgroundColor: showDropdown ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
+                }}
+              >
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  backgroundColor: '#4a90e2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+                }}>
+                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+                <span style={{ color: 'white', fontSize: '14px' }}>
+                  {user?.name || 'User'}
+                </span>
+                <span style={{ 
+                  color: 'white', 
+                  fontSize: '12px', 
+                  transform: showDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s'
+                }}>
+                  ▼
+                </span>
+              </div>
+              
+              {/* Dropdown Menu */}
+              {showDropdown && (
+                <div 
+                  className="dropdown-menu"
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: '0',
+                    backgroundColor: 'white',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                    minWidth: '200px',
+                    zIndex: 1000,
+                    marginTop: '8px',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <div style={{
+                    padding: '12px 16px',
+                    borderBottom: '1px solid #f0f0f0',
+                    backgroundColor: '#f8f9fa'
+                  }}>
+                    <div style={{ fontWeight: '600', color: '#333', fontSize: '14px' }}>
+                      {user?.name || 'User'}
+                    </div>
+                    <div style={{ color: '#666', fontSize: '12px' }}>
+                      {user?.email || 'user@example.com'}
+                    </div>
+                  </div>
+
+                  <div 
+                    onClick={handleProfilePageClick}
+                    style={{
+                      padding: '12px 16px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      color: '#333',
+                      fontSize: '14px',
+                      borderBottom: '1px solid #f0f0f0',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseOver={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                    onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                  >
+                    <span style={{ fontSize: '16px' }}>👤</span>
+                    My Profile
+                  </div>
+                  
+                  <div 
+                    onClick={handleLogoutClick}
+                    style={{
+                      padding: '12px 16px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      color: '#dc3545',
+                      fontSize: '14px',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseOver={(e) => e.target.style.backgroundColor = '#fff5f5'}
+                    onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                  >
+                    <span style={{ fontSize: '16px' }}>🚪</span>
+                    Logout
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Hamburger Menu Button */}
+        <button 
+          className="hamburger-button mobile-only"
+          onClick={toggleMobileMenu}
+          style={{
+            display: 'none',
+            flexDirection: 'column',
+            justifyContent: 'space-around',
+            width: '30px',
+            height: '30px',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '0',
+            zIndex: 1001
+          }}
+        >
+          <div style={{
+            width: '25px',
+            height: '3px',
+            backgroundColor: 'white',
+            borderRadius: '2px',
+            transition: 'all 0.3s ease',
+            transform: isMobileMenuOpen ? 'rotate(45deg) translate(6px, 6px)' : 'none'
+          }}></div>
+          <div style={{
+            width: '25px',
+            height: '3px',
+            backgroundColor: 'white',
+            borderRadius: '2px',
+            transition: 'all 0.3s ease',
+            opacity: isMobileMenuOpen ? 0 : 1
+          }}></div>
+          <div style={{
+            width: '25px',
+            height: '3px',
+            backgroundColor: 'white',
+            borderRadius: '2px',
+            transition: 'all 0.3s ease',
+            transform: isMobileMenuOpen ? 'rotate(-45deg) translate(8px, -8px)' : 'none'
+          }}></div>
+        </button>
+      </div>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div 
+          className="mobile-menu"
+          ref={mobileMenuRef}
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: '0',
+            right: '0',
+            backgroundColor: 'rgba(15, 23, 42, 0.98)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderTop: 'none',
+            borderRadius: '0 0 12px 12px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+            zIndex: 999,
+            animation: 'slideDown 0.3s ease-out'
+          }}
+        >
+          {/* Navigation Links */}
+          <div style={{ padding: '1rem 0', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            {['home', 'galeri', 'cuaca', 'kontak'].map((id) => (
+              <a 
+                key={id}
+                href={`#${id}`} 
+                onClick={(e) => handleNavClick(e, `#${id}`)}
+                style={{
+                  display: 'block',
+                  color: '#e2e8f0',
+                  textDecoration: 'none',
+                  fontWeight: '500',
+                  padding: '12px 2rem',
+                  transition: 'all 0.3s ease',
+                  borderLeft: '4px solid transparent'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                  e.target.style.borderLeftColor = '#3b82f6';
+                  e.target.style.color = '#3b82f6';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.backgroundColor = 'transparent';
+                  e.target.style.borderLeftColor = 'transparent';
+                  e.target.style.color = '#e2e8f0';
+                }}
+              >
+                {id.charAt(0).toUpperCase() + id.slice(1)}
+              </a>
+            ))}
+          </div>
+
+          {/* Mobile Auth Section */}
+          <div style={{ padding: '1rem 2rem 2rem 2rem' }}>
+            {!isLoggedIn ? (
+              <div>
+                <button 
+                  onClick={handleLoginClick}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    marginBottom: '8px',
+                    backgroundColor: 'transparent',
+                    color: 'white',
+                    border: '1px solid white',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    transition: 'all 0.3s'
+                  }}
+                  onMouseOver={(e) => {
+                    e.target.style.backgroundColor = 'white';
+                    e.target.style.color = '#333';
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.backgroundColor = 'transparent';
+                    e.target.style.color = 'white';
+                  }}
+                >
+                  Login
+                </button>
+                <button 
+                  onClick={handleRegisterClick}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    backgroundColor: 'white',
+                    color: '#333',
+                    border: '1px solid white',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    transition: 'all 0.3s'
+                  }}
+                  onMouseOver={(e) => {
+                    e.target.style.backgroundColor = '#f0f0f0';
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.backgroundColor = 'white';
+                  }}
+                >
+                  Register
+                </button>
+              </div>
+            ) : (
+              <div>
                 {/* User Info */}
                 <div style={{
-                  padding: '12px 16px',
-                  borderBottom: '1px solid #f0f0f0',
-                  backgroundColor: '#f8f9fa'
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '12px 0',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                  marginBottom: '1rem'
                 }}>
-                  <div style={{ fontWeight: '600', color: '#333', fontSize: '14px' }}>
-                    {user?.name || 'User'}
-                  </div>
-                  <div style={{ color: '#666', fontSize: '12px' }}>
-                    {user?.email || 'user@example.com'}
-                  </div>
-                </div>
-
-                {/* Menu Items */}
-                <div 
-                  onClick={handleProfilePageClick}
-                  style={{
-                    padding: '12px 16px',
-                    cursor: 'pointer',
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: '#4a90e2',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px',
-                    color: '#333',
-                    fontSize: '14px',
-                    borderBottom: '1px solid #f0f0f0',
-                    transition: 'background-color 0.2s'
-                  }}
-                  onMouseOver={(e) => e.target.style.backgroundColor = '#f8f9fa'}
-                  onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
-                >
-                  <span style={{ fontSize: '16px' }}>👤</span>
-                  My Profile
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '16px',
+                    fontWeight: 'bold'
+                  }}>
+                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                  </div>
+                  <div>
+                    <div style={{ color: 'white', fontSize: '16px', fontWeight: '600' }}>
+                      {user?.name || 'User'}
+                    </div>
+                    <div style={{ color: '#94a3b8', fontSize: '14px' }}>
+                      {user?.email || 'user@example.com'}
+                    </div>
+                  </div>
                 </div>
                 
-                <div 
-                  onClick={handleLogoutClick}
-                  style={{
-                    padding: '12px 16px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    color: '#dc3545',
-                    fontSize: '14px',
-                    transition: 'background-color 0.2s'
-                  }}
-                  onMouseOver={(e) => e.target.style.backgroundColor = '#fff5f5'}
-                  onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
-                >
-                  <span style={{ fontSize: '16px' }}>🚪</span>
-                  Logout
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <button 
+                    onClick={handleProfilePageClick}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      color: 'white',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      textAlign: 'left',
+                      transition: 'all 0.3s'
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                    }}
+                  >
+                    👤 My Profile
+                  </button>
+                  
+                  <button 
+                    onClick={handleLogoutClick}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                      color: '#ff6b6b',
+                      border: '1px solid rgba(220, 53, 69, 0.3)',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      textAlign: 'left',
+                      transition: 'all 0.3s'
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.backgroundColor = 'rgba(220, 53, 69, 0.2)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
+                    }}
+                  >
+                    🚪 Logout
+                  </button>
                 </div>
               </div>
             )}
           </div>
-        )}
-      </div>
-      
+        </div>
+      )}
+
+      {/* Updated Styles */}
       <style jsx>{`
+        /* Desktop-only elements */
+        .desktop-only {
+          display: flex;
+        }
+        
+        /* Mobile-only elements */
+        .mobile-only {
+          display: none;
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+          .desktop-only {
+            display: none !important;
+          }
+          
+          .mobile-only {
+            display: flex !important;
+          }
+          
+          .hamburger-button {
+            display: flex !important;
+          }
+          
+          .nav-container {
+            position: relative;
+          }
+          
+          .logo {
+            z-index: 1002;
+          }
+          
+          .logo img {
+            height: 30px;
+          }
+          
+          .logo span {
+            font-size: 20px;
+          }
+        }
+        
+        /* Keyframe animations */
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        /* Hover effects for mobile menu items */
+        .mobile-menu a:active {
+          background-color: rgba(59, 130, 246, 0.2) !important;
+          border-left-color: #3b82f6 !important;
+          color: #3b82f6 !important;
+        }
+        
+        /* Enhanced button styles */
         .auth-buttons {
           display: flex;
           align-items: center;
@@ -390,6 +693,11 @@ function Navbar() {
           display: flex;
           align-items: center;
           cursor: pointer;
+          transition: transform 0.3s ease;
+        }
+        
+        .logo:hover {
+          transform: scale(1.05);
         }
         
         .logo img {
@@ -404,33 +712,62 @@ function Navbar() {
           font-weight: bold;
           color: white;
         }
-      
         
-        @media (max-width: 768px) {
-          .auth-buttons {
-            gap: 8px;
+        /* Navigation menu styles */
+        .nav-menu {
+          display: flex;
+          gap: 2rem;
+          list-style: none;
+          margin: 0;
+          padding: 0;
+        }
+        
+        .nav-menu a {
+          color: #e2e8f0;
+          text-decoration: none;
+          font-weight: 500;
+          transition: color 0.3s ease, transform 0.3s ease;
+        }
+        
+        .nav-menu a:hover {
+          color: #3b82f6;
+          transform: translateY(-2px);
+        }
+        
+        /* Mobile menu enhancements */
+        .mobile-menu {
+          max-height: 80vh;
+          overflow-y: auto;
+        }
+        
+        /* Smooth transitions for all interactive elements */
+        * {
+          -webkit-tap-highlight-color: transparent;
+        }
+        
+        button, a {
+          -webkit-touch-callout: none;
+          -webkit-user-select: none;
+          -khtml-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+        }
+        
+        /* Additional mobile optimizations */
+        @media (max-width: 480px) {
+          .navbar {
+            padding: 0.8rem 1rem;
           }
           
-          .auth-buttons button {
-            padding: 6px 12px !important;
-            font-size: 12px !important;
-          }
-          
-          .dropdown-menu {
-            right: -10px;
-            min-width: 180px;
-          }
-          
-          .user-profile span {
-            display: none;
-          }
-          
-          .logo img {
-            height: 30px;
+          .mobile-menu {
+            left: -1rem;
+            right: -1rem;
+            border-radius: 0 0 0 0;
           }
           
           .logo span {
-            font-size: 20px;
+            font-size: 18px;
           }
         }
       `}</style>

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "node server/index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "build": "npm run build --prefix frontend"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

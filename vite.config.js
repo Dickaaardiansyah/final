@@ -7,7 +7,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'robots.txt'],
+      includeAssets: [
+        'favicon.ico',
+        'apple-touch-icon.png',
+        'robots.txt'
+      ],
       manifest: {
         name: 'Fishmap AI',
         short_name: 'Fishmap',
@@ -18,17 +22,17 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: '/icons/icon1.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: 'pwa-512x512.png',
+            src: '/icons/icon2.png',
             sizes: '512x512',
             type: 'image/png'
           },
           {
-            src: 'pwa-512x512.png',
+            src: '/icons/icon1.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'

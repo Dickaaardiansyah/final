@@ -1,23 +1,22 @@
 {
-  "name": "Fishmap AI",
-  "short_name": "Fishmap",
-  "description": "Aplikasi monitoring ikan & cuaca untuk nelayan",
+  "name": "Fishmap AI - Keajaiban Laut",
+  "short_name": "Fishmap AI",
+  "description": "Aplikasi PWA untuk eksplorasi laut dan analisis ikan.",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0d1b2a",
+  "theme_color": "#ffffff",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "/icons/icon-192.jpeg",
+      "src": "/icons/icon2.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/icons/icon2.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     }
   ]
 }

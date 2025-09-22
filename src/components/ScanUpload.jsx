@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCurrentUser } from '../data/userLogin'; // Import cookie-based auth function
+import { getCurrentUser } from '../data/userLogin';
 
 function ScanUpload() {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -11,6 +11,7 @@ function ScanUpload() {
   const [stream, setStream] = useState(null);
   const [error, setError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [videoStatus, setVideoStatus] = useState('initializing'); // Track video loading state
   
   // Permission system states
   const [userStatus, setUserStatus] = useState(null);
@@ -33,11 +34,9 @@ function ScanUpload() {
     try {
       setIsCheckingStatus(true);
       
-      // First, get user data from cookies
       const userResult = await getCurrentUser();
       
       if (!userResult.success) {
-        // User not logged in
         setUser(null);
         setUserStatus({ 
           can_access_catalog: false, 
@@ -51,10 +50,9 @@ function ScanUpload() {
 
       setUser(userResult.user);
 
-      // Check catalog access status
       const response = await fetch(`${API_BASE_URL}/api/catalog/my-status`, {
         method: 'GET',
-        credentials: 'include', // Use cookies for authentication
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
         }
@@ -86,7 +84,7 @@ function ScanUpload() {
     }
   };
 
-  // Request catalog access (redirect ke halaman daftar katalog)
+  // Request catalog access
   const requestCatalogAccess = () => {
     navigate('/katalog/daftar');
   };
@@ -155,23 +153,200 @@ function ScanUpload() {
     }
   };
 
-  // Start camera
-  const startCamera = async () => {
+  // FIXED: Enhanced camera start function with proper loading state management
+  const startCamera = useCallback(async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' }
-      });
+      // Clean up existing stream
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+
+      setVideoStatus('requesting'); // Update status
+      setError(null);
+      
+      console.log('📷 Starting camera...');
+
+      const constraints = {
+        video: {
+          facingMode: { ideal: 'environment' }, // Prefer back camera
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 },
+          frameRate: { ideal: 30, min: 15 }
+        }
+      };
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('📷 Media stream obtained:', mediaStream.getVideoTracks().length, 'video tracks');
+
       setStream(mediaStream);
       setIsCamera(true);
-      setError(null);
+
+      // Wait for video element to be ready
+      await new Promise((resolve) => {
+        setTimeout(resolve, 50); // Small delay to ensure DOM update
+      });
+
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        
+        // FIXED: Explicitly play the video
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          await playPromise;
+          console.log('📷 Video started playing');
+        }
+
+        // FIXED: Comprehensive video loading event handlers
+        const handleLoadedMetadata = () => {
+          console.log('📷 Metadata loaded:', {
+            width: videoRef.current.videoWidth,
+            height: videoRef.current.videoHeight
+          });
+          setVideoStatus('metadata-loaded');
+        };
+
+        const handleLoadedData = () => {
+          console.log('📷 First frame loaded');
+          setVideoStatus('ready');
+        };
+
+        const handleCanPlay = () => {
+          console.log('📷 Can play through');
+          if (videoStatus !== 'ready') {
+            setVideoStatus('ready');
+          }
+        };
+
+        const handleError = (e) => {
+          console.error('📷 Video error:', e);
+          setVideoStatus('error');
+          setError('Error memuat video: ' + e.message);
+        };
+
+        // Add event listeners
+        videoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
+        videoRef.current.addEventListener('loadeddata', handleLoadedData);
+        videoRef.current.addEventListener('canplay', handleCanPlay);
+        videoRef.current.addEventListener('error', handleError);
+
+        // Cleanup function
+        videoRef.current._cameraCleanup = () => {
+          videoRef.current.removeEventListener('loadedmetadata', handleLoadedMetadata);
+          videoRef.current.removeEventListener('loadeddata', handleLoadedData);
+          videoRef.current.removeEventListener('canplay', handleCanPlay);
+          videoRef.current.removeEventListener('error', handleError);
+        };
+
+        // Fallback: Set ready after 3 seconds if no events fired
+        const fallbackTimeout = setTimeout(() => {
+          if (videoStatus !== 'ready') {
+            console.log('📷 Fallback: Setting ready status');
+            setVideoStatus('ready');
+          }
+        }, 3000);
+
+        videoRef.current._fallbackTimeout = fallbackTimeout;
       }
+
     } catch (error) {
-      console.error('Error accessing camera:', error);
-      setError('Gagal mengakses kamera. Pastikan browser memiliki izin kamera.');
+      console.error('❌ Camera error:', error);
+      setVideoStatus('error');
+      
+      if (error.name === 'OverconstrainedError') {
+        try {
+          console.log('🔄 Trying fallback constraints...');
+          const fallbackConstraints = { video: true };
+          const fallbackStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+          
+          setStream(fallbackStream);
+          setIsCamera(true);
+          
+          if (videoRef.current) {
+            videoRef.current.srcObject = fallbackStream;
+            const playPromise = videoRef.current.play();
+            if (playPromise !== undefined) {
+              await playPromise;
+            }
+          }
+          setVideoStatus('ready');
+          console.log('📷 Fallback camera ready');
+        } catch (fallbackError) {
+          console.error('❌ Fallback failed:', fallbackError);
+          setError(`Gagal mengakses kamera: ${fallbackError.message}`);
+        }
+      } else {
+        setError(`Gagal mengakses kamera: ${error.message}`);
+      }
     }
-  };
+  }, [stream, videoStatus]);
+
+  // FIXED: Enhanced capture function with better readiness checks
+  const capturePhoto = useCallback(async () => {
+    const video = videoRef.current;
+    if (!video || video.readyState < 2) { // HAVE_CURRENT_DATA or higher
+      console.error('❌ Video not ready for capture:', video?.readyState);
+      setError('Video belum siap. Tunggu beberapa detik dan coba lagi.');
+      return;
+    }
+
+    try {
+      console.log('📸 Preparing to capture...');
+      
+      // Wait for next frame to ensure we get fresh data
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        throw new Error('Canvas not available');
+      }
+
+      const context = canvas.getContext('2d');
+      if (!context) {
+        throw new Error('Canvas context not available');
+      }
+
+      // FIXED: Ensure dimensions are valid
+      const width = video.videoWidth || 640;
+      const height = video.videoHeight || 480;
+      
+      if (width === 0 || height === 0) {
+        throw new Error('Video dimensions not available yet');
+      }
+
+      console.log('📸 Capturing with dimensions:', width, 'x', height);
+
+      // Set canvas size
+      canvas.width = width;
+      canvas.height = height;
+
+      // Draw image
+      context.drawImage(video, 0, 0, width, height);
+      
+      // Convert to JPEG
+      const imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      const filename = `fish-snapshot-${Date.now()}.jpg`;
+      
+      // Convert to file
+      const file = dataURLtoFile(imageDataUrl, filename);
+      
+      console.log('📸 Photo captured successfully');
+      
+      // Update state
+      setSelectedImage(imageDataUrl);
+      setImageFile(file);
+      
+      // Stop camera
+      stopCamera();
+      setError(null);
+      
+      // Analyze image
+      analyzeImage(file);
+      
+    } catch (error) {
+      console.error('❌ Capture error:', error);
+      setError('Gagal mengambil foto: ' + error.message);
+    }
+  }, [videoStatus]);
 
   // Convert data URL to File
   const dataURLtoFile = (dataURL, filename) => {
@@ -186,37 +361,44 @@ function ScanUpload() {
     return new File([u8arr], filename, { type: mime });
   };
 
-  // Capture photo from camera
-  const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const video = videoRef.current;
-      const context = canvas.getContext('2d');
-      
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0);
-      
-      const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-      setSelectedImage(imageDataUrl);
-      
-      const file = dataURLtoFile(imageDataUrl, 'camera-capture.jpg');
-      setImageFile(file);
-      
-      stopCamera();
-      setError(null);
-      analyzeImage(file);
-    }
-  };
-
-  // Stop camera
-  const stopCamera = () => {
+  // Enhanced stop camera function
+  const stopCamera = useCallback(() => {
+    console.log('🛑 Stopping camera...');
+    
     if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach(track => {
+        track.stop();
+      });
       setStream(null);
     }
+    
+    if (videoRef.current) {
+      // Clean up event listeners and timeouts
+      if (videoRef.current._cameraCleanup) {
+        videoRef.current._cameraCleanup();
+      }
+      if (videoRef.current._fallbackTimeout) {
+        clearTimeout(videoRef.current._fallbackTimeout);
+      }
+      
+      videoRef.current.srcObject = null;
+      videoRef.current.pause();
+      videoRef.current.load(); // Reset video element
+    }
+    
     setIsCamera(false);
-  };
+    setVideoStatus('stopped');
+    console.log('🛑 Camera stopped');
+  }, [stream]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stopCamera();
+      }
+    };
+  }, [stopCamera, stream]);
 
   // Analyze image using API
   const analyzeImage = async (file) => {
@@ -231,7 +413,7 @@ function ScanUpload() {
       const response = await fetch(`${API_BASE_URL}/predict-image`, {
         method: 'POST',
         mode: 'cors',
-        credentials: 'include', // Include cookies
+        credentials: 'include',
         body: formData,
       });
 
@@ -267,7 +449,7 @@ function ScanUpload() {
     }
   };
 
-  // Save to database data_ikan (for button Simpan)
+  // Save to database data_ikan
   const saveToDatabase = async () => {
     if (!analysisResult || !selectedImage) {
       alert('Tidak ada data untuk disimpan');
@@ -294,7 +476,7 @@ function ScanUpload() {
       const response = await fetch(`${API_BASE_URL}/api/save-to-dataikan`, {
         method: 'POST',
         mode: 'cors',
-        credentials: 'include', // Use cookies for authentication
+        credentials: 'include',
         body: formData
       });
 
@@ -319,7 +501,7 @@ function ScanUpload() {
     }
   };
 
-  // Navigate to AddKatalog page with data (using navigate state instead of localStorage)
+  // Navigate to AddKatalog page with data
   const goToAddKatalog = () => {
     if (!analysisResult || !selectedImage) {
       alert('Tidak ada data hasil analisis');
@@ -340,7 +522,6 @@ function ScanUpload() {
       originalImageFile: imageFile
     };
 
-    // Use navigate state instead of localStorage to pass data
     navigate('/katalog/tambah', { 
       state: { catalogData } 
     });
@@ -354,6 +535,7 @@ function ScanUpload() {
     setIsAnalyzing(false);
     setError(null);
     setIsSaving(false);
+    setVideoStatus('initializing');
     stopCamera();
   };
 
@@ -480,6 +662,19 @@ function ScanUpload() {
     );
   };
 
+  // FIXED: Enhanced video status display
+  const getVideoStatusDisplay = () => {
+    const statusMap = {
+      'initializing': 'Memulai kamera...',
+      'requesting': 'Meminta akses kamera...',
+      'metadata-loaded': 'Memuat metadata...',
+      'ready': 'Siap mengambil foto',
+      'error': 'Error kamera',
+      'stopped': 'Kamera berhenti'
+    };
+    return statusMap[videoStatus] || videoStatus;
+  };
+
   return (
     <div className="scan-container">
       <h2 className="section-title">Scan Ikanmu Disini</h2>
@@ -525,11 +720,62 @@ function ScanUpload() {
 
       {isCamera && (
         <div className="camera-container">
-          <video ref={videoRef} autoPlay playsInline className="camera-video" />
+          {/* FIXED: Enhanced video element */}
+          <video 
+            ref={videoRef} 
+            autoPlay 
+            muted 
+            playsInline 
+            className="camera-video"
+            style={{
+              width: '100%',
+              maxWidth: '500px',
+              height: 'auto',
+              borderRadius: '12px',
+              backgroundColor: '#000',
+              objectFit: 'cover',
+              display: 'block',
+              margin: '0 auto'
+            }}
+          />
+          
           <canvas ref={canvasRef} style={{ display: 'none' }} />
+          
+          {/* FIXED: Better status indicator */}
+          <div className="video-status">
+            <div className={`status-indicator ${videoStatus}`}>
+              <i className={
+                videoStatus === 'ready' ? 'fas fa-check-circle' :
+                videoStatus === 'requesting' || videoStatus === 'metadata-loaded' ? 'fas fa-spinner fa-spin' :
+                videoStatus === 'error' ? 'fas fa-exclamation-triangle' : 'fas fa-circle-notch fa-spin'
+              }></i>
+              <span>{getVideoStatusDisplay()}</span>
+            </div>
+            
+            {/* Debug info - only in development */}
+            {process.env.NODE_ENV === 'development' && videoRef.current && (
+              <div style={{ 
+                fontSize: '11px', 
+                color: '#666', 
+                marginTop: '4px',
+                textAlign: 'center',
+                fontFamily: 'monospace'
+              }}>
+                {videoRef.current.videoWidth}x{videoRef.current.videoHeight} | 
+                ReadyState: {videoRef.current.readyState} | 
+                Duration: {videoRef.current.duration || 'live'}
+              </div>
+            )}
+          </div>
+          
           <div className="camera-controls">
-            <button onClick={capturePhoto} className="capture-button">
-              <i className="fas fa-camera"></i> Ambil Foto
+            <button 
+              onClick={capturePhoto} 
+              className="capture-button"
+              disabled={videoStatus !== 'ready' || videoRef.current?.readyState < 2}
+            >
+              <i className="fas fa-camera"></i> 
+              {videoStatus === 'ready' ? 'Ambil Foto' : 'Menunggu...'}
             </button>
             <button onClick={stopCamera} className="cancel-button">
               <i className="fas fa-times"></i> Batal
@@ -604,7 +850,6 @@ function ScanUpload() {
               </div>
               
               <div className="action-buttons">
-                {/* Tombol Simpan → simpan ke data_ikan */}
                 <button 
                   onClick={saveToDatabase} 
                   className="save-button"
@@ -614,7 +859,6 @@ function ScanUpload() {
                   {isSaving ? 'Menyimpan...' : 'Simpan'}
                 </button>
                 
-                {/* Tombol Tambah ke Katalog */}
                 {renderCatalogButton()}
               </div>
             </div>
@@ -641,51 +885,15 @@ function ScanUpload() {
           gap: 8px;
         }
         
-        .permission-info.checking {
-          background-color: #f3f4f6;
-          color: #374151;
-          border: 1px solid #d1d5db;
-        }
+        .permission-info.checking { background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+        .permission-info.guest { background-color: #eff6ff; color: #1e40af; border: 1px solid #3b82f6; }
+        .permission-info.warning { background-color: #fffbeb; color: #92400e; border: 1px solid #f59e0b; }
+        .permission-info.success { background-color: #f0fdf4; color: #15803d; border: 1px solid #22c55e; }
+        .permission-info.pending { background-color: #fefce8; color: #a16207; border: 1px solid #eab308; }
+        .permission-info.rejected { background-color: #fef2f2; color: #dc2626; border: 1px solid #ef4444; }
+        .permission-info.info { background-color: #f0f9ff; color: #1e40af; border: 1px solid #60a5fa; }
         
-        .permission-info.guest {
-          background-color: #eff6ff;
-          color: #1e40af;
-          border: 1px solid #3b82f6;
-        }
-        
-        .permission-info.warning {
-          background-color: #fffbeb;
-          color: #92400e;
-          border: 1px solid #f59e0b;
-        }
-        
-        .permission-info.success {
-          background-color: #f0fdf4;
-          color: #15803d;
-          border: 1px solid #22c55e;
-        }
-        
-        .permission-info.pending {
-          background-color: #fefce8;
-          color: #a16207;
-          border: 1px solid #eab308;
-        }
-        
-        .permission-info.rejected {
-          background-color: #fef2f2;
-          color: #dc2626;
-          border: 1px solid #ef4444;
-        }
-        
-        .permission-info.info {
-          background-color: #f0f9ff;
-          color: #1e40af;
-          border: 1px solid #60a5fa;
-        }
-        
-        .login-button,
-        .catalog-button,
-        .request-access-button {
+        .login-button, .catalog-button, .request-access-button {
           background: linear-gradient(135deg, #3b82f6, #2563eb);
           color: white;
           border: none;
@@ -702,28 +910,171 @@ function ScanUpload() {
           justify-content: center;
         }
         
-        .catalog-button.disabled {
+        .catalog-button.disabled { background: #9ca3af; cursor: not-allowed; }
+        .catalog-button.pending { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .catalog-button.rejected { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .request-access-button { background: linear-gradient(135deg, #10b981, #059669); }
+        
+        .login-button:hover, .catalog-button:not(.disabled):hover, .request-access-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* FIXED: Enhanced camera styling */
+        .camera-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 16px;
+          padding: 24px;
+          background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+          border-radius: 16px;
+          margin: 24px 0;
+          border: 2px solid #e2e8f0;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        .camera-video {
+          border-radius: 12px;
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+          transition: all 0.3s ease;
+        }
+        
+        .camera-video:hover {
+          box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* FIXED: Enhanced status indicator */
+        .video-status {
+          text-align: center;
+          margin: 12px 0;
+        }
+        
+        .status-indicator {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 16px;
+          border-radius: 25px;
+          font-size: 14px;
+          font-weight: 500;
+          transition: all 0.3s ease;
+        }
+        
+        .status-indicator.ready {
+          background: linear-gradient(135deg, #10b981, #059669);
+          color: white;
+        }
+        
+        .status-indicator.requesting,
+        .status-indicator.metadata-loaded {
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          color: white;
+        }
+        
+        .status-indicator.error {
+          background: linear-gradient(135deg, #ef4444, #dc2626);
+          color: white;
+        }
+        
+        .status-indicator.initializing {
+          background: #f3f4f6;
+          color: #6b7280;
+          border: 1px solid #d1d5db;
+        }
+        
+        .camera-controls {
+          display: flex;
+          gap: 16px;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 8px;
+        }
+        
+        .capture-button {
+          background: linear-gradient(135deg, #10b981, #059669);
+          color: white;
+          border: none;
+          padding: 16px 28px;
+          border-radius: 50px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 160px;
+          justify-content: center;
+          box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+        
+        .capture-button:hover:not(:disabled) {
+          transform: translateY(-3px);
+          box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+        
+        .capture-button:disabled {
+          background: #9ca3af;
+          cursor: not-allowed;
+          opacity: 0.7;
+          transform: none;
+          box-shadow: none;
+        }
+        
+        .cancel-button {
+          background: linear-gradient(135deg, #ef4444, #dc2626);
+          color: white;
+          border: none;
+          padding: 16px 24px;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        
+        .cancel-button:hover {
+          background: linear-gradient(135deg, #dc2626, #b91c1c);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+        }
+        
+        .save-button, .reset-button {
+          background: linear-gradient(135deg, #6b7280, #4b5563);
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-right: 12px;
+        }
+        
+        .save-button:hover:not(:disabled), .reset-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .save-button:disabled {
           background: #9ca3af;
           cursor: not-allowed;
         }
         
-        .catalog-button.pending {
-          background: linear-gradient(135deg, #f59e0b, #d97706);
-        }
-        
-        .catalog-button.rejected {
-          background: linear-gradient(135deg, #ef4444, #dc2626);
-        }
-        
-        .request-access-button {
-          background: linear-gradient(135deg, #10b981, #059669);
-        }
-        
-        .login-button:hover,
-        .catalog-button:not(.disabled):hover,
-        .request-access-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        .action-buttons {
+          display: flex;
+          gap: 12px;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 20px;
         }
       `}</style>
     </div>

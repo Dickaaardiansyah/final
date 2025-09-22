@@ -22,7 +22,7 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: '/icons/icon1.png',
+            src: '/icons/diiki.png',
             sizes: '192x192',
             type: 'image/png'
           },
@@ -32,7 +32,7 @@ export default defineConfig({
             type: 'image/png'
           },
           {
-            src: '/icons/icon1.png',
+            src: '/icons/diiki.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'

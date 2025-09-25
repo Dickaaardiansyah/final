@@ -1,5 +1,6 @@
 // routes/index.js - Updated dengan Cookie Management Routes
 import express from 'express';
+import path from 'path';
 import {
   getUsers,
   Register,
@@ -69,9 +70,32 @@ import { saveToDataIkan } from '../controllers/Models.js';
 import { getAllDataIkan } from '../controllers/Models.js';
 
 const router = express.Router();
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Folder penyimpanan tetap
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9); // Hash unik
+    const ext = path.extname(file.originalname); // Ambil ekstensi asli (misalnya .jpg)
+    cb(null, uniqueSuffix + ext); // Simpan sebagai hash + ekstensi
+  }
+});
+
 const upload = multer({
-  dest: 'uploads/',
-  limits: { fileSize: 5 * 1024 * 1024 } // Maksimal 5MB
+  storage: storage, // Gunakan storage custom
+  limits: { fileSize: 5 * 1024 * 1024 }, // Maksimal 5MB
+  fileFilter: (req, file, cb) => {
+    // Validasi format file (opsional, untuk mencegah error lebih awal)
+    const filetypes = /jpeg|jpg|png|webp|bmp|heic|tif|tiff|mpo|pfm|dng/;
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = filetypes.test(file.mimetype);
+    if (extname && mimetype) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Format file tidak didukung! Hanya gambar (jpg, png, dll.) yang diizinkan.'));
+    }
+  }
 });
 
 // ==================== AUTH ROUTES ====================

@@ -155,7 +155,9 @@ export const predictImage = (req, res) => {
 
   const imagePath = req.file.path;
   const scriptPath = path.join(__dirname, '..', 'models', 'predict.py');
-  const python = spawn('python', [scriptPath, 'image', imagePath]);
+  // Tambahkan confidence threshold (opsional, default 0.3)
+  const confThreshold = req.body.confThreshold || 0.3;
+  const python = spawn('python', [scriptPath, 'image', imagePath, confThreshold.toString()]);
 
   handlePythonProcess(python, res);
 };
@@ -232,16 +234,12 @@ export const saveScan = async (req, res) => {
     console.log('Body:', req.body);
     console.log('File:', req.file);
 
-    // Get user ID dari token (atau fallback)
     let userId = getUserIdFromToken(req);
-    
-    // Jika tidak ada token, coba ambil dari body atau gunakan default
     if (!userId) {
-      userId = req.body.userId || req.user?.id || 1; // Fallback ke user ID 1
+      userId = req.body.userId || req.user?.id || 1;
       console.log('Using fallback userId:', userId);
     }
 
-    // Validasi input
     const {
       fish_name,
       predicted_class,
@@ -249,7 +247,8 @@ export const saveScan = async (req, res) => {
       habitat,
       konsumsi,
       top_predictions,
-      notes
+      notes,
+      boxes // Tambahkan field untuk bounding box
     } = req.body;
 
     if (!fish_name || !predicted_class || !confidence) {
@@ -259,40 +258,34 @@ export const saveScan = async (req, res) => {
       });
     }
 
-    // Handle image - convert to base64
     let fishImageBase64 = null;
     if (req.file) {
       fishImageBase64 = await convertImageToBase64(req.file.path);
-      
-      // Optional: Copy to permanent folder juga
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const extension = path.extname(req.file.originalname);
       const newFilename = `scan_${timestamp}${extension}`;
       await copyImageToDataFolder(req.file.path, newFilename);
     }
 
-    // Prepare data untuk database
     const predictionData = {
       userId: userId,
       predictedFishName: fish_name || predicted_class,
-      probability: parseFloat(confidence) / 100, // Convert dari percentage ke decimal
+      probability: parseFloat(confidence) / 100,
       habitat: habitat || 'Tidak diketahui',
       consumptionSafety: konsumsi || 'Tidak diketahui',
       fishImage: fishImageBase64,
-      notes: notes || `Top 3 predictions: ${top_predictions || '[]'}`
+      notes: notes || `Top 3 predictions: ${top_predictions || '[]'} | Boxes: ${JSON.stringify(boxes || [])}`
     };
 
     console.log('Saving to database:', {
       ...predictionData,
-      fishImage: fishImageBase64 ? '[BASE64_DATA]' : null // Hide base64 in logs
+      fishImage: fishImageBase64 ? '[BASE64_DATA]' : null
     });
 
-    // Simpan ke database menggunakan Sequelize
     const savedPrediction = await FishPredictions.create(predictionData);
 
     console.log('Data saved to database successfully:', savedPrediction.id);
 
-    // Response sukses
     res.json({
       status: 'success',
       message: 'Data berhasil disimpan ke database',
@@ -306,7 +299,8 @@ export const saveScan = async (req, res) => {
         consumption_safety: savedPrediction.consumptionSafety,
         prediction_date: savedPrediction.predictionDate,
         prediction_time: savedPrediction.predictionTime,
-        created_at: savedPrediction.createdAt
+        created_at: savedPrediction.createdAt,
+        boxes: boxes || [] // Kembalikan bounding box dalam respons
       }
     });
 
@@ -326,13 +320,11 @@ export const saveToCatalog = async (req, res) => {
     console.log('=== SAVE TO CATALOG DEBUG ===');
     console.log('User from middleware:', {
       userId: req.userId,
-      email: req.email, 
+      email: req.email,
       name: req.name
     });
 
-    // CRITICAL: Gunakan userId dari verifyToken middleware
-    const userId = req.userId; // Dari middleware, bukan dari helper function
-    
+    const userId = req.userId;
     if (!userId) {
       console.error('❌ No user ID from middleware!');
       return res.status(401).json({
@@ -341,7 +333,6 @@ export const saveToCatalog = async (req, res) => {
       });
     }
 
-    // Verify user exists and has permission
     const user = await Users.findByPk(userId);
     if (!user) {
       return res.status(404).json({
@@ -350,7 +341,6 @@ export const saveToCatalog = async (req, res) => {
       });
     }
 
-    // Check catalog access permission
     if (user.role !== 'contributor' && user.role !== 'admin') {
       return res.status(403).json({
         status: 'error',
@@ -361,46 +351,50 @@ export const saveToCatalog = async (req, res) => {
     const {
       fish_name,
       predicted_class,
-      confidence,
+      probability,
       habitat,
       konsumsi,
       top_predictions,
-      notes
+      notes,
+      boxes,
+      deskripsi_tambahan,
+      lokasi_penangkapan,
+      tanggal_ditemukan,
+      kondisi_ikan
     } = req.body;
 
-    if (!fish_name || !predicted_class || !confidence) {
+    if (!fish_name || !predicted_class || !probability) {
       return res.status(400).json({
         status: 'error',
-        message: 'fish_name, predicted_class, dan confidence harus diisi',
+        message: 'fish_name, predicted_class, dan probability harus diisi',
       });
     }
 
-    // Handle image conversion
     let fishImageBase64 = null;
     if (req.file) {
       fishImageBase64 = await convertImageToBase64(req.file.path);
-      
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const extension = path.extname(req.file.originalname);
-      const newFilename = `catalog_${userId}_${timestamp}${extension}`; // Include userId in filename
+      const newFilename = `catalog_${userId}_${timestamp}${extension}`;
       await copyImageToDataFolder(req.file.path, newFilename);
     }
 
-    // Prepare catalog data dengan userId yang benar
     const catalogData = {
-      userId: userId, // CRITICAL: Gunakan userId dari middleware
+      userId: userId,
       predictedFishName: fish_name || predicted_class,
-      namaIkan: fish_name, // Untuk catalog entries
-      kategori: konsumsi === 'Dapat dikonsumsi' ? 'Ikan Konsumsi' : 'Ikan Hias',
-      probability: parseFloat(confidence) / 100,
+      namaIkan: fish_name || predicted_class,
+      probability: parseFloat(probability),
       habitat: habitat || 'Tidak diketahui',
       consumptionSafety: konsumsi || 'Tidak diketahui',
       fishImage: fishImageBase64,
-      notes: notes || `CATALOG ITEM - Top 3 predictions: ${top_predictions || '[]'}`,
-      deskripsiTambahan: notes ? notes.split('|')[0].replace('CATALOG ITEM - ', '') : '',
-      lokasiPenangkapan: notes ? (notes.split('|')[1]?.replace('Lokasi: ', '') || '') : '',
-      tanggalDitemukan: notes ? (notes.split('|')[2]?.replace('Tanggal: ', '') || '') : '',
-      kondisiIkan: notes ? (notes.split('|')[3]?.replace('Kondisi: ', '') || 'mati') : 'mati'
+      notes: notes || `CATALOG ITEM - Top 3 predictions: ${top_predictions || '[]'} | Boxes: ${JSON.stringify(boxes || [])}`,
+      kategori: konsumsi?.includes('konsumsi') ? 'Ikan Konsumsi' : 'Ikan Hias',
+      deskripsiTambahan: deskripsi_tambahan || '',
+      lokasiPenangkapan: lokasi_penangkapan || '',
+      tanggalDitemukan: tanggal_ditemukan || null,
+      kondisiIkan: kondisi_ikan || 'mati',
+      amanDikonsumsi: konsumsi?.toLowerCase().includes('aman') || konsumsi?.toLowerCase().includes('konsumsi') || false,
+      jauhDariPabrik: req.body.jauh_dari_pabrik || true
     };
 
     console.log('📝 Saving catalog data:', {
@@ -409,7 +403,6 @@ export const saveToCatalog = async (req, res) => {
       namaIkan: catalogData.namaIkan
     });
 
-    // Simpan ke database dengan userId yang benar
     const savedCatalog = await FishPredictions.create(catalogData);
 
     console.log('✅ Catalog saved successfully:', {
@@ -424,14 +417,23 @@ export const saveToCatalog = async (req, res) => {
       success: true,
       data: {
         id: savedCatalog.id,
-        userId: savedCatalog.userId, // Return untuk verifikasi
+        userId: savedCatalog.userId,
         fish_name: savedCatalog.namaIkan,
         predicted_class: savedCatalog.predictedFishName,
-        confidence: (savedCatalog.probability * 100).toFixed(2) + '%',
+        probability: (savedCatalog.probability * 100).toFixed(2) + '%',
         habitat: savedCatalog.habitat,
         consumption_safety: savedCatalog.consumptionSafety,
+        fish_image: savedCatalog.fishImage,
         created_at: savedCatalog.createdAt,
-        contributor: user.name
+        contributor: user.name,
+        kategori: savedCatalog.kategori,
+        deskripsi_tambahan: savedCatalog.deskripsiTambahan,
+        lokasi_penangkapan: savedCatalog.lokasiPenangkapan,
+        tanggal_ditemukan: savedCatalog.tanggalDitemukan,
+        kondisi_ikan: savedCatalog.kondisiIkan,
+        aman_dikonsumsi: savedCatalog.amanDikonsumsi,
+        jauh_dari_pabrik: savedCatalog.jauhDariPabrik,
+        boxes: boxes || []
       }
     });
 
@@ -447,15 +449,12 @@ export const saveToCatalog = async (req, res) => {
 
 // ==================== GET DATA FROM DATABASE ====================
 
-// Get all scans from database
 export const getScans = async (req, res) => {
   try {
-    // Get user ID dari token jika ada
     let userId = getUserIdFromToken(req);
-    
     let whereClause = {};
     if (userId) {
-      whereClause.userId = userId; // Filter by user if authenticated
+      whereClause.userId = userId;
     }
 
     const scans = await FishPredictions.findAll({
@@ -463,27 +462,43 @@ export const getScans = async (req, res) => {
       include: [{
         model: Users,
         as: 'user',
-        attributes: ['id', 'name', 'email'] // Don't expose password
+        attributes: ['id', 'name', 'email']
       }],
       order: [['createdAt', 'DESC']],
-      limit: 20 // Limit untuk performance
+      limit: 20
     });
 
-    const formattedScans = scans.map(scan => ({
-      id: scan.id,
-      fish_name: scan.predictedFishName,
-      predicted_class: scan.predictedFishName,
-      confidence: (scan.probability * 100).toFixed(2) + '%',
-      habitat: scan.habitat,
-      consumption_safety: scan.consumptionSafety,
-      fish_image: scan.fishImage,
-      prediction_date: scan.predictionDate,
-      prediction_time: scan.predictionTime,
-      notes: scan.notes,
-      created_at: scan.createdAt,
-      updated_at: scan.updatedAt,
-      user: scan.user
-    }));
+    const formattedScans = scans.map(scan => {
+      let boxes = [];
+      try {
+        const notesParts = scan.notes?.split('| Boxes: ') || [];
+        if (notesParts[1]) {
+          boxes = JSON.parse(notesParts[1]);
+        }
+      } catch (e) {
+        console.error('Error parsing boxes from notes:', e);
+      }
+
+      return {
+        id: scan.id,
+        fish_name: scan.predictedFishName,
+        predicted_class: scan.predictedFishName,
+        probability: (scan.probability * 100).toFixed(2) + '%',
+        habitat: scan.habitat,
+        consumption_safety: scan.consumptionSafety,
+        fish_image: scan.fishImage,
+        prediction_date: scan.predictionDate,
+        prediction_time: scan.predictionTime,
+        notes: scan.notes,
+        nama_ikan: scan.namaIkan,
+        kategori: scan.kategori,
+        aman_dikonsumsi: scan.amanDikonsumsi,
+        created_at: scan.createdAt,
+        updated_at: scan.updatedAt,
+        user: scan.user,
+        boxes: boxes
+      };
+    });
 
     res.json({
       status: 'success',
@@ -500,20 +515,16 @@ export const getScans = async (req, res) => {
   }
 };
 
-// Get catalog items (items with CATALOG in notes)
 export const getCatalog = async (req, res) => {
   try {
-    // Get user ID dari token jika ada
     let userId = getUserIdFromToken(req);
-    
     let whereClause = {
       notes: {
-        [Op.like]: '%CATALOG%' // Filter items yang ditandai sebagai catalog
+        [Op.like]: '%CATALOG%'
       }
     };
-    
     if (userId) {
-      whereClause.userId = userId; // Filter by user if authenticated
+      whereClause.userId = userId;
     }
 
     const catalogItems = await FishPredictions.findAll({
@@ -527,21 +538,42 @@ export const getCatalog = async (req, res) => {
       limit: 20
     });
 
-    const formattedCatalog = catalogItems.map(item => ({
-      id: item.id,
-      fish_name: item.predictedFishName,
-      predicted_class: item.predictedFishName,
-      confidence: (item.probability * 100).toFixed(2) + '%',
-      habitat: item.habitat,
-      consumption_safety: item.consumptionSafety,
-      fish_image: item.fishImage,
-      prediction_date: item.predictionDate,
-      prediction_time: item.predictionTime,
-      notes: item.notes,
-      created_at: item.createdAt,
-      updated_at: item.updatedAt,
-      user: item.user
-    }));
+    const formattedCatalog = catalogItems.map(item => {
+      let boxes = [];
+      try {
+        const notesParts = item.notes?.split('| Boxes: ') || [];
+        if (notesParts[1]) {
+          boxes = JSON.parse(notesParts[1]);
+        }
+      } catch (e) {
+        console.error('Error parsing boxes from notes:', e);
+      }
+
+      return {
+        id: item.id,
+        fish_name: item.predictedFishName,
+        predicted_class: item.predictedFishName,
+        probability: (item.probability * 100).toFixed(2) + '%',
+        habitat: item.habitat,
+        consumption_safety: item.consumptionSafety,
+        fish_image: item.fishImage,
+        prediction_date: item.predictionDate,
+        prediction_time: item.predictionTime,
+        notes: item.notes,
+        nama_ikan: item.namaIkan,
+        kategori: item.kategori,
+        deskripsi_tambahan: item.deskripsiTambahan,
+        lokasi_penangkapan: item.lokasiPenangkapan,
+        tanggal_ditemukan: item.tanggalDitemukan,
+        kondisi_ikan: item.kondisiIkan,
+        aman_dikonsumsi: item.amanDikonsumsi,
+        jauh_dari_pabrik: item.jauhDariPabrik,
+        created_at: item.createdAt,
+        updated_at: item.updatedAt,
+        user: item.user,
+        boxes: boxes
+      };
+    });
 
     res.json({
       status: 'success',

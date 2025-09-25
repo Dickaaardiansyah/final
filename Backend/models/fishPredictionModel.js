@@ -18,25 +18,24 @@ const FishPredictions = db.define('katalog_fish', {
       key: 'id'
     }
   },
-  // Field yang sudah ada (hasil AI)
   predictedFishName: {
     type: DataTypes.STRING,
-    allowNull: false // Hasil prediksi, misalnya "Ikan Cupang"
+    allowNull: false
   },
   probability: {
     type: DataTypes.FLOAT,
-    allowNull: false // Probabilitas prediksi, misalnya 0.97
+    allowNull: false
   },
   habitat: {
     type: DataTypes.TEXT,
-    allowNull: true // Misalnya: "Sawah, rawa, dan kolam air tenang"
+    allowNull: true
   },
   consumptionSafety: {
     type: DataTypes.STRING,
-    allowNull: true // Misalnya: "Tidak umum dikonsumsi"
+    allowNull: true
   },
   fishImage: {
-    type: DataTypes.TEXT, // base64 atau URL
+    type: DataTypes.TEXT,
     allowNull: true
   },
   predictionDate: {
@@ -53,11 +52,9 @@ const FishPredictions = db.define('katalog_fish', {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  
-  // Field tambahan untuk form "Tambahkan ke Katalog"
   namaIkan: {
     type: DataTypes.STRING,
-    allowNull: true, // Optional karena bisa sama dengan predictedFishName
+    allowNull: true,
     comment: 'Nama ikan yang bisa diedit user'
   },
   kategori: {
@@ -103,59 +100,46 @@ const FishPredictions = db.define('katalog_fish', {
     allowNull: true,
     defaultValue: true,
     comment: 'Apakah lokasi jauh dari pabrik'
+  },
+  boxes: { // Kolom baru untuk bounding box
+    type: DataTypes.JSON,
+    allowNull: true,
+    comment: 'Bounding box dari YOLO (array koordinat [x1, y1, x2, y2])'
   }
 }, {
   freezeTableName: true,
   timestamps: true,
-  
-  // TAMBAHAN: Hooks untuk auto-populate fields
   hooks: {
-    // Hook sebelum create (INSERT)
     beforeCreate: (instance, options) => {
       console.log('🔧 beforeCreate hook triggered');
-      
-      // Auto-populate namaIkan jika kosong
       if (!instance.namaIkan && instance.predictedFishName) {
         instance.namaIkan = instance.predictedFishName;
         console.log(`✅ Auto-populated namaIkan: ${instance.namaIkan}`);
       }
-      
-      // Auto-populate kategori jika kosong
       if (!instance.kategori) {
-        // Logic untuk menentukan kategori berdasarkan consumptionSafety
         if (instance.consumptionSafety) {
           const safety = instance.consumptionSafety.toLowerCase();
-          if (safety.includes('aman') || safety.includes('konsumsi') || safety.includes('dimakan')) {
-            instance.kategori = 'Ikan Konsumsi';
-          } else {
-            instance.kategori = 'Ikan Hias';
-          }
+          instance.kategori = safety.includes('aman') || safety.includes('konsumsi') || safety.includes('dimakan')
+            ? 'Ikan Konsumsi'
+            : 'Ikan Hias';
         } else {
-          instance.kategori = 'Ikan Konsumsi'; // Default
+          instance.kategori = 'Ikan Konsumsi';
         }
         console.log(`✅ Auto-populated kategori: ${instance.kategori}`);
       }
-      
-      // Auto-populate amanDikonsumsi berdasarkan consumptionSafety
       if (instance.amanDikonsumsi === null && instance.consumptionSafety) {
         const safety = instance.consumptionSafety.toLowerCase();
         instance.amanDikonsumsi = safety.includes('aman') || safety.includes('konsumsi') || safety.includes('dimakan');
         console.log(`✅ Auto-populated amanDikonsumsi: ${instance.amanDikonsumsi}`);
       }
     },
-    
-    // Hook sebelum update
     beforeUpdate: (instance, options) => {
       console.log('🔧 beforeUpdate hook triggered');
-      
-      // Jika namaIkan dihapus/dikosongkan, restore dari predictedFishName
       if (!instance.namaIkan && instance.predictedFishName) {
         instance.namaIkan = instance.predictedFishName;
         console.log(`✅ Restored namaIkan from predictedFishName: ${instance.namaIkan}`);
       }
     },
-    
-    // Hook setelah create untuk logging
     afterCreate: (instance, options) => {
       console.log(`🎉 New fish prediction created:`, {
         id: instance.id,
@@ -168,18 +152,16 @@ const FishPredictions = db.define('katalog_fish', {
   }
 });
 
-// Relasi ke user
-FishPredictions.belongsTo(Users, { 
+FishPredictions.belongsTo(Users, {
   foreignKey: 'userId',
   as: 'user'
 });
 
-// TAMBAHAN: Instance methods untuk utility
-FishPredictions.prototype.isInCatalog = function() {
+FishPredictions.prototype.isInCatalog = function () {
   return this.namaIkan !== null && this.namaIkan !== undefined && this.namaIkan.trim() !== '';
 };
 
-FishPredictions.prototype.getCatalogReadyData = function() {
+FishPredictions.prototype.getCatalogReadyData = function () {
   return {
     id: this.id,
     namaIkan: this.namaIkan,
@@ -188,7 +170,8 @@ FishPredictions.prototype.getCatalogReadyData = function() {
     habitat: this.habitat,
     amanDikonsumsi: this.amanDikonsumsi,
     fishImage: this.fishImage,
-    contributor: this.user?.name || 'Unknown'
+    contributor: this.user?.name || 'Unknown',
+    boxes: this.boxes || []
   };
 };
 

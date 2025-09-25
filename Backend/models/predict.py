@@ -1,30 +1,16 @@
-import os
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-
+# predict.py
 import sys
 import json
+from ultralytics import YOLO
+import os
 import numpy as np
-from tensorflow import keras
 from PIL import Image
 
-# Load model
-model_path = os.path.join(os.path.dirname(__file__), 'best_model.keras')
-model = keras.models.load_model(model_path)
+# Load model YOLO
+model_path = os.path.join(os.path.dirname(__file__), 'best.pt')
+model = YOLO(model_path)
 
-# Load class names
-class_names_path = os.path.join(os.path.dirname(__file__), 'class_names.json')
-try:
-    with open(class_names_path, 'r') as f:
-        class_names = json.load(f)
-    if isinstance(class_names, list):
-        class_mapping = {str(i): name for i, name in enumerate(class_names)}
-    else:
-        class_mapping = class_names
-except:
-    class_mapping = {str(i): f"class_{i}" for i in range(22)}
-
-# Load fish info
+# Load fish info (opsional, jika masih ingin menyertakan informasi tambahan)
 info_path = os.path.join(os.path.dirname(__file__), 'fish_info.json')
 try:
     with open(info_path, 'r') as f:
@@ -36,63 +22,76 @@ if __name__ == "__main__":
     try:
         if len(sys.argv) > 2 and sys.argv[1] == "image":
             image_path = sys.argv[2]
-            expected_shape = model.input_shape
+            conf_threshold = float(sys.argv[3]) if len(sys.argv) > 3 else 0.3
 
-            if len(expected_shape) == 4:
-                height, width, channels = expected_shape[1], expected_shape[2], expected_shape[3]
+            # Lakukan prediksi menggunakan YOLO
+            results = model.predict(image_path, conf=conf_threshold, verbose=False)
 
-                image = Image.open(image_path)
-                if channels == 1:
-                    image = image.convert('L')
-                else:
-                    image = image.convert('RGB')
+            output = []
+            for r in results:
+                boxes = r.boxes.xyxy
+                confs = r.boxes.conf
+                classes = r.boxes.cls
 
-                image = image.resize((width, height))
-                input_data = np.array(image).reshape(1, height, width, channels).astype(np.float32)
-                input_data = input_data / 255.0
+                for box, conf, cls in zip(boxes, confs, classes):
+                    if conf >= conf_threshold:
+                        x1, y1, x2, y2 = map(float, box)
+                        predicted_label = r.names[int(cls)]
+                        output.append({
+                            "class": predicted_label,
+                            "confidence": float(conf),
+                            "box": [x1, y1, x2, y2]
+                        })
+
+            # Jika tidak ada deteksi
+            if not output:
+                result = {
+                    "status": "success",
+                    "model_type": "image",
+                    "predicted_class": None,
+                    "confidence": 0.0,
+                    "top_3_predictions": [],
+                    "info": {
+                        "nama_indonesia": "Tidak diketahui",
+                        "habitat": "Tidak diketahui",
+                        "konsumsi": "Tidak diketahui"
+                    }
+                }
             else:
-                raise ValueError("Model is not an image model")
+                # Ambil prediksi dengan confidence tertinggi
+                top_prediction = max(output, key=lambda x: x["confidence"])
+                predicted_label = top_prediction["class"]
+                predicted_conf = top_prediction["confidence"]
+
+                # Top 3 prediksi (jika ada lebih dari satu deteksi)
+                top_3 = sorted(output, key=lambda x: x["confidence"], reverse=True)[:3]
+                top_3_predictions = [
+                    {"class": pred["class"], "confidence": pred["confidence"]}
+                    for pred in top_3
+                ]
+
+                # Ambil info tambahan dari fish_info.json
+                extra_info = fish_info.get(predicted_label, {
+                    "nama_indonesia": "Tidak diketahui",
+                    "habitat": "Tidak diketahui",
+                    "konsumsi": "Tidak diketahui"
+                })
+
+                result = {
+                    "status": "success",
+                    "model_type": "image",
+                    "predicted_class": predicted_label,
+                    "confidence": float(predicted_conf),
+                    "top_3_predictions": top_3_predictions,
+                    "info": extra_info,
+                    "boxes": [pred["box"] for pred in output]  # Tambahkan bounding box
+                }
+
+            print(json.dumps(result))
+
         else:
-            features = json.loads(sys.argv[1])
-            expected_shape = model.input_shape
-
-            if len(expected_shape) == 4:
-                height, width, channels = expected_shape[1], expected_shape[2], expected_shape[3]
-                input_data = np.random.random((1, height, width, channels)).astype(np.float32)
-            else:
-                input_data = np.array(features).reshape(1, -1).astype(np.float32)
-
-        prediction = model.predict(input_data, verbose=0)[0]
-
-        predicted_class_idx = np.argmax(prediction)
-        predicted_prob = prediction[predicted_class_idx]
-        predicted_label = class_mapping.get(str(predicted_class_idx), f"class_{predicted_class_idx}")
-
-        top_3_indices = np.argsort(prediction)[-3:][::-1]
-        top_3_predictions = []
-        for idx in top_3_indices:
-            top_3_predictions.append({
-                "class": class_mapping.get(str(idx), f"class_{idx}"),
-                "confidence": float(prediction[idx])
-            })
-
-        # Get extra info if available
-        extra_info = fish_info.get(predicted_label, {
-            "nama_indonesia": "Tidak diketahui",
-            "habitat": "Tidak diketahui",
-            "konsumsi": "Tidak diketahui"
-        })
-
-        result = {
-            "predicted_class": predicted_label,
-            "confidence": float(predicted_prob),
-            "top_3_predictions": top_3_predictions,
-            "status": "success",
-            "model_type": "image" if len(model.input_shape) == 4 else "tabular",
-            "info": extra_info  # ✅ tambahkan info
-        }
-
-        print(json.dumps(result))
+            # Jika bukan prediksi gambar, kembalikan error
+            raise ValueError("Hanya prediksi gambar yang didukung dengan YOLO")
 
     except Exception as e:
         error_result = {

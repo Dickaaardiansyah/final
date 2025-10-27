@@ -62,6 +62,16 @@ import {
   deleteGalery
 } from '../controllers/Galery.js';
 
+import {
+  getAllRecipes,
+  getRecipeById,
+  getRecipesByFishName,
+  createRecipe,
+  updateRecipe,
+  deleteRecipe,
+  getUniqueFishNames
+} from '../controllers/Recipe.js';
+
 import multer from 'multer';
 import Users from '../models/userModel.js';
 import { Op } from 'sequelize';
@@ -602,5 +612,16 @@ router.post('/api/galery', verifyAdminToken, createGalery);
 router.put('/api/galery/:id', verifyAdminToken, updateGalery);
 router.delete('/api/galery/:id', verifyAdminToken, deleteGalery);
 router.get('/api/admin/approved-users', verifyAdminToken, getApprovedUsers);
+
+// Public routes (anyone can view recipes)
+router.get('/api/recipes', getAllRecipes);
+router.get('/api/recipes/fish-names', getUniqueFishNames);
+router.get('/api/recipes/:id', getRecipeById);
+router.get('/api/recipes/fish/:fishName', getRecipesByFishName);
+
+// Admin routes (need admin auth to create/update/delete)
+router.post('/api/recipes', verifyAdminToken, createRecipe);
+router.put('/api/recipes/:id', verifyAdminToken, updateRecipe);
+router.delete('/api/recipes/:id', verifyAdminToken, deleteRecipe);
 
 export default router;

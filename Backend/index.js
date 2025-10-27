@@ -8,6 +8,7 @@ import cors from 'cors';
 // import Admin from './models/adminModel.js';
 // import DataIkan from './models/dataIkanModel.js';
 // import Galery from './models/galeryModels.js';
+// import Recipes from './models/recipeModel.js';
 
 import router from './routes/index.js';
 
@@ -42,6 +43,7 @@ try {
     // await Admin.sync(); 
     // await DataIkan.sync();
     // await Galery.sync();
+    // await Recipes.sync();
 } catch (error) {
   console.error('Database connection failed:', error);
 }

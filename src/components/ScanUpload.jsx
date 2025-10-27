@@ -13,6 +13,8 @@ function ScanUpload() {
   const [showDetail, setShowDetail] = useState(false);
   const [activeTab, setActiveTab] = useState('makanan');
   const [expandedItems, setExpandedItems] = useState({});
+  const [recipes, setRecipes] = useState([]);
+  const [isLoadingRecipes, setIsLoadingRecipes] = useState(false);
   
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -37,8 +39,38 @@ function ScanUpload() {
         analysisResult: analysisResult,
         selectedImage: selectedImage
       });
+      // Fetch recipes when analysis result is available
+      fetchRecipes(analysisResult.name || analysisResult.predicted_class);
     }
   }, [analysisResult, selectedImage]);
+
+  // Fetch recipes based on fish name
+  const fetchRecipes = async (fishName) => {
+    setIsLoadingRecipes(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/recipes/fish/${encodeURIComponent(fishName)}`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.data && result.data.length > 0) {
+          setRecipes(result.data);
+        } else {
+          // Use default recipes if none found
+          setRecipes([]);
+        }
+      } else {
+        setRecipes([]);
+      }
+    } catch (error) {
+      console.error('Error fetching recipes:', error);
+      setRecipes([]);
+    } finally {
+      setIsLoadingRecipes(false);
+    }
+  };
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -350,10 +382,21 @@ function ScanUpload() {
       const result = await response.json();
 
       if (result.status === 'success' || result.success) {
-        // Show success message
         const successMessage = document.createElement('div');
         successMessage.className = 'success-toast';
         successMessage.textContent = 'Data berhasil disimpan ke database!';
+        successMessage.style.cssText = `
+          position: fixed;
+          top: 2rem;
+          right: 2rem;
+          background: linear-gradient(135deg, #10b981, #059669);
+          color: white;
+          padding: 1rem 1.5rem;
+          border-radius: 12px;
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+          z-index: 1001;
+          font-weight: 500;
+        `;
         document.body.appendChild(successMessage);
         
         setTimeout(() => {
@@ -380,6 +423,7 @@ function ScanUpload() {
     setVideoStatus('initializing');
     setShowDetail(false);
     setExpandedItems({});
+    setRecipes([]);
     stopCamera();
   };
 
@@ -410,29 +454,7 @@ function ScanUpload() {
     }));
   };
 
-  const makananItems = [
-    {
-      name: 'Mujair Goreng',
-      resep: '1. Bersihkan ikan mujair, lumuri dengan jeruk nipis dan garam. 2. Haluskan bawang putih, ketumbar, dan garam. 3. Lumuri ikan dengan bumbu halus, diamkan 15 menit. 4. Goreng ikan dalam minyak panas hingga kecoklatan.',
-      image: 'https://img-global.cpcdn.com/recipes/52674138f70a6042/1200x630cq80/photo.jpg'
-    },
-    {
-      name: 'Mujair Bumbu Merah',
-      resep: '1. Cuci bersih ikan, balur garam dan jeruk nipis. 2. Haluskan bumbu (bawang merah, bawang putih, cabai, dll.). 3. Tumis bumbu halus hingga harum, tambah gula merah dan asam jawa. 4. Tuang air, garam, kaldu, masukkan ikan dan masak hingga matang.',
-      image: 'https://cdn.yummy.co.id/content-images/images/20220405/xXQDk9AHAH8i7kxPBkMIS8Fbl8xUalmP-31363439313136393333d41d8cd98f00b204e9800998ecf8427e.jpg?x-oss-process=image/resize,w_600,h_315,m_fill,image/watermark,image_Y29udGVudC1pbWFnZXMvaW1hZ2VzLzIwMjMwNzMxL3dhdGVybWFyay1hcnRpY2xlLnBuZz94LW9zcy1wcm9jZXNzPWltYWdlL3Jlc2l6ZSxQXzEwMA==,g_south,y_0'
-    },
-    {
-      name: 'Ikan Rendang',
-      resep: '1. Haluskan bumbu rendang (cabai, bawang, kemiri, dll.). 2. Tumis bumbu hingga harum, tambah santan. 3. Masukkan ikan mujair yang sudah digoreng setengah matang. 4. Masak dengan api kecil hingga bumbu meresap dan mengental.',
-      image: 'https://berita.japrime.id/uploads/images/202401/image_870x580_65a28523a6bc8.jpg'
-    },
-    {
-      name: 'Ikan Bumbu Kecap',
-      resep: '1. Goreng ikan mujair hingga matang. 2. Tumis bawang merah, bawang putih, cabai. 3. Tambahkan kecap manis, garam, dan air. 4. Masukkan ikan, aduk hingga bumbu meresap.',
-      image: 'https://i.ytimg.com/vi/Ml87OceEH9w/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLBJRj6CoG8xOzeVvvpfxsWazOrZZA'
-    }
-  ];
-
+  // Default budidaya items (always shown)
   const budidayaItems = [
     {
       name: 'Pastikan kualitas air tetap bersih dengan pH optimal',
@@ -456,51 +478,124 @@ function ScanUpload() {
     }
   ];
 
+  // Format recipe instructions to array
+  const formatInstructions = (instructions) => {
+    if (!instructions) return [];
+    // Split by numbers followed by dot (1. 2. 3. etc)
+    const steps = instructions.split(/\d+\.\s+/).filter(step => step.trim());
+    return steps;
+  };
+
   return (
-    <div className="scan-container">
-      <div className="scan-header">
-        <h1 className="scan-title">Fishmap Ai</h1>
+    <div style={{
+      maxWidth: '700px',
+      margin: '40px auto',
+      borderRadius: '20px',
+      padding: '2rem 1rem',
+      background: 'linear-gradient(135deg, #f9fafb 0%, #ffffff 100%)'
+    }}>
+      <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+        <h1 style={{
+          fontSize: '3rem',
+          fontWeight: '800',
+          background: 'linear-gradient(135deg, #2563eb, #10b981)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+          marginBottom: '0.5rem',
+          letterSpacing: '-0.025em'
+        }}>Fishmap Ai</h1>
       </div>
       
       {error && (
-        <div className="error-message">
-          <i className="fas fa-exclamation-triangle"></i>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          background: 'linear-gradient(135deg, #fef2f2, #fee2e2)',
+          border: '1px solid #fecaca',
+          color: '#dc2626',
+          padding: '1rem 1.5rem',
+          borderRadius: '12px',
+          margin: '1rem 0',
+          boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)'
+        }}>
+          <i className="fas fa-exclamation-triangle" style={{ fontSize: '1.125rem' }}></i>
           <span>{error}</span>
         </div>
       )}
       
       {!selectedImage && !isCamera && (
         <div 
-          className="upload-zone"
+          style={{
+            background: '#ffffff',
+            border: '2px dashed #d1d5db',
+            borderRadius: '16px',
+            padding: '3rem 2rem',
+            textAlign: 'center',
+            cursor: 'pointer'
+          }}
           onDragOver={handleDragOver}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          <div className="upload-content">
-            <div className="upload-icon">
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ fontSize: '4rem', color: '#2563eb', marginBottom: '1.5rem' }}>
               <i className="fas fa-cloud-upload-alt"></i>
             </div>
-            <h3 className="upload-title">Upload Gambar Ikan</h3>
-            <p className="upload-description">
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1f2937', marginBottom: '0.5rem' }}>
+              Upload Gambar Ikan
+            </h3>
+            <p style={{ color: '#4b5563', marginBottom: '0.5rem', fontSize: '1rem' }}>
               Drag & drop gambar atau klik untuk memilih file
             </p>
-            <p className="upload-formats">Mendukung: JPG, PNG, WEBP (Max 10MB)</p>
+            <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '2rem' }}>
+              Mendukung: JPG, PNG, WEBP (Max 10MB)
+            </p>
             
             <input 
               type="file" 
               id="file-upload" 
               accept="image/*" 
-              className="file-input" 
+              style={{ display: 'none' }}
               onChange={handleFileUpload}
             />
             
-            <div className="upload-actions">
-              <label htmlFor="file-upload" className="btn btn-primary">
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <label htmlFor="file-upload" style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                padding: '0.75rem 1.5rem',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                color: 'white',
+                minWidth: '140px'
+              }}>
                 <i className="fas fa-folder-open"></i>
                 Pilih File
               </label>
-              <button onClick={startCamera} className="btn btn-secondary">
+              <button onClick={startCamera} style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                padding: '0.75rem 1.5rem',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: 'white',
+                minWidth: '140px'
+              }}>
                 <i className="fas fa-camera"></i>
                 Buka Kamera
               </button>
@@ -510,40 +605,78 @@ function ScanUpload() {
       )}
 
       {isCamera && (
-        <div className="camera-container">
-          <div className="camera-wrapper">
+        <div style={{
+          background: 'white',
+          borderRadius: '16px',
+          overflow: 'hidden',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+          margin: '2rem 0'
+        }}>
+          <div style={{ position: 'relative', background: '#111827' }}>
             <video 
               ref={videoRef} 
               autoPlay 
               muted 
               playsInline 
-              className="camera-video"
+              style={{ width: '100%', height: 'auto', display: 'block', minHeight: '300px', objectFit: 'cover' }}
             />
-            <canvas ref={canvasRef} className="camera-canvas" />
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
           </div>
           
-          <div className="camera-status">
-            <div className={`status-indicator status-${videoStatus}`}>
-              <div className="status-icon">
-                {videoStatus === 'ready' && <i className="fas fa-check-circle"></i>}
-                {(videoStatus === 'requesting' || videoStatus === 'metadata-loaded') && <i className="fas fa-spinner fa-spin"></i>}
-                {videoStatus === 'error' && <i className="fas fa-exclamation-triangle"></i>}
-                {videoStatus === 'initializing' && <i className="fas fa-circle-notch fa-spin"></i>}
-              </div>
-              <span className="status-text">{getVideoStatusDisplay()}</span>
+          <div style={{ padding: '1rem', background: 'rgba(0, 0, 0, 0.8)', textAlign: 'center' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.5rem 1rem',
+              borderRadius: '9999px',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              background: videoStatus === 'ready' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+              color: 'white'
+            }}>
+              {videoStatus === 'ready' && <i className="fas fa-check-circle"></i>}
+              {(videoStatus === 'requesting' || videoStatus === 'metadata-loaded') && <i className="fas fa-spinner fa-spin"></i>}
+              <span>{getVideoStatusDisplay()}</span>
             </div>
           </div>
           
-          <div className="camera-controls">
+          <div style={{ padding: '1.5rem', background: '#f9fafb', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button 
               onClick={capturePhoto} 
-              className="btn btn-capture"
               disabled={videoStatus !== 'ready' || videoRef.current?.readyState < 2}
-            >
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                padding: '1rem 2rem',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '1.125rem',
+                fontWeight: '600',
+                cursor: videoStatus === 'ready' ? 'pointer' : 'not-allowed',
+                background: videoStatus === 'ready' ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : '#9ca3af',
+                color: 'white',
+                minWidth: '180px'
+              }}>
               <i className="fas fa-camera"></i>
               {videoStatus === 'ready' ? 'Ambil Foto' : 'Menunggu...'}
             </button>
-            <button onClick={stopCamera} className="btn btn-cancel">
+            <button onClick={stopCamera} style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem 1.5rem',
+              border: 'none',
+              borderRadius: '12px',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+              color: 'white'
+            }}>
               <i className="fas fa-times"></i>
               Batal
             </button>
@@ -552,73 +685,207 @@ function ScanUpload() {
       )}
 
       {selectedImage && (
-        <div className="result-container">
+        <div style={{ position: 'relative', margin: '2rem 0' }}>
           {isAnalyzing && (
-            <div className="loading-overlay">
-              <div className="loading-content">
-                <div className="loading-spinner"></div>
-                <h3>Menganalisis Gambar</h3>
-                <p>AI sedang mengidentifikasi ikan Anda...</p>
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 0, 0, 0.8)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              backdropFilter: 'blur(4px)'
+            }}>
+              <div style={{
+                background: 'white',
+                padding: '3rem 2rem',
+                borderRadius: '16px',
+                textAlign: 'center',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+                maxWidth: '400px',
+                margin: '0 1rem'
+              }}>
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  border: '4px solid #e5e7eb',
+                  borderTop: '4px solid #2563eb',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                  margin: '0 auto 1.5rem'
+                }}></div>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1f2937', marginBottom: '0.5rem' }}>
+                  Menganalisis Gambar
+                </h3>
+                <p style={{ color: '#4b5563', margin: 0 }}>AI sedang mengidentifikasi ikan Anda...</p>
               </div>
             </div>
           )}
 
           {isSaving && (
-            <div className="loading-overlay">
-              <div className="loading-content">
-                <div className="loading-spinner"></div>
-                <h3>Menyimpan Data</h3>
-                <p>Menyimpan hasil ke database...</p>
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 0, 0, 0.8)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              backdropFilter: 'blur(4px)'
+            }}>
+              <div style={{
+                background: 'white',
+                padding: '3rem 2rem',
+                borderRadius: '16px',
+                textAlign: 'center',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+                maxWidth: '400px',
+                margin: '0 1rem'
+              }}>
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  border: '4px solid #e5e7eb',
+                  borderTop: '4px solid #10b981',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                  margin: '0 auto 1.5rem'
+                }}></div>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1f2937', marginBottom: '0.5rem' }}>
+                  Menyimpan Data
+                </h3>
+                <p style={{ color: '#4b5563', margin: 0 }}>Menyimpan hasil ke database...</p>
               </div>
             </div>
           )}
 
           {analysisResult && !isAnalyzing && (
-            <div className="analysis-card">
-              <button onClick={resetScan} className="card-close">
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
+              overflow: 'hidden',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+              margin: '2rem auto',
+              maxWidth: '600px',
+              position: 'relative',
+              border: '1px solid #e5e7eb'
+            }}>
+              <button onClick={resetScan} style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                width: '40px',
+                height: '40px',
+                border: 'none',
+                background: 'rgba(0, 0, 0, 0.5)',
+                color: 'white',
+                borderRadius: '50%',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10,
+                backdropFilter: 'blur(4px)'
+              }}>
                 <i className="fas fa-times"></i>
               </button>
               
-              <div className="card-image">
-                <img src={selectedImage} alt={analysisResult.name} />
+              <div style={{ position: 'relative', width: '100%', height: '250px', overflow: 'hidden' }}>
+                <img src={selectedImage} alt={analysisResult.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               
-              <div className="card-content">
-                <div className="fish-header">
-                  <h2 className="fish-name">{analysisResult.name}</h2>
-                  <div className="confidence-badge">
+              <div style={{ padding: '2rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                  <h2 style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1f2937', margin: 0, lineHeight: 1.2 }}>
+                    {analysisResult.name}
+                  </h2>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.5rem 1rem',
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    color: 'white',
+                    borderRadius: '9999px',
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                    boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)'
+                  }}>
                     <i className="fas fa-bullseye"></i>
                     {analysisResult.confidence} akurat
                   </div>
                 </div>
                 
-                <div className="fish-details">
-                  <div className="detail-item">
-                    <div className="detail-label">
-                      <i className="fas fa-water"></i>
+                <div style={{ display: 'grid', gap: '1rem' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '1rem',
+                    background: '#f9fafb',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '500', color: '#374151', fontSize: '0.875rem' }}>
+                      <i className="fas fa-water" style={{ color: '#2563eb', width: '16px' }}></i>
                       Habitat
                     </div>
-                    <div className="detail-value">{analysisResult.habitat}</div>
+                    <div style={{ fontWeight: '600', color: '#1f2937' }}>{analysisResult.habitat}</div>
                   </div>
                   
-                  <div className="detail-item">
-                    <div className="detail-label">
-                      <i className="fas fa-utensils"></i>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '1rem',
+                    background: '#f9fafb',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '500', color: '#374151', fontSize: '0.875rem' }}>
+                      <i className="fas fa-utensils" style={{ color: '#2563eb', width: '16px' }}></i>
                       Status Konsumsi
                     </div>
-                    <div className={`detail-value ${analysisResult.konsumsi === 'Dapat dikonsumsi' ? 'consumable' : 'non-consumable'}`}>
+                    <div style={{ 
+                      fontWeight: '600', 
+                      color: analysisResult.konsumsi === 'Dapat dikonsumsi' ? '#10b981' : '#f59e0b'
+                    }}>
                       {analysisResult.konsumsi}
                     </div>
                   </div>
                   
-                  <div className="detail-item">
-                    <div className="detail-label">
-                      <i className="fas fa-sticky-note"></i>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '1rem',
+                    background: '#f9fafb',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '500', color: '#374151', fontSize: '0.875rem' }}>
+                      <i className="fas fa-sticky-note" style={{ color: '#2563eb', width: '16px' }}></i>
                       Note
                     </div>
                     <button 
                       onClick={toggleDetail}
-                      className="btn-link"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#2563eb',
+                        fontSize: '0.95rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        padding: 0
+                      }}
                     >
                       Lihat Selengkapnya
                     </button>
@@ -626,11 +893,25 @@ function ScanUpload() {
                 </div>
               </div>
               
-              <div className="card-actions">
+              <div style={{ padding: '1.5rem 2rem', background: '#f9fafb', borderTop: '1px solid #e5e7eb', textAlign: 'center' }}>
                 <button 
                   onClick={saveToDatabase} 
-                  className="btn btn-save"
                   disabled={isSaving}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    padding: '0.875rem 1.75rem',
+                    border: 'none',
+                    borderRadius: '12px',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    cursor: isSaving ? 'not-allowed' : 'pointer',
+                    background: isSaving ? '#9ca3af' : 'linear-gradient(135deg, #10b981, #059669)',
+                    color: 'white',
+                    minWidth: '200px'
+                  }}
                 >
                   {isSaving ? (
                     <>
@@ -649,8 +930,21 @@ function ScanUpload() {
           )}
 
           {!analysisResult && !isAnalyzing && (
-            <div className="retry-container">
-              <button onClick={resetScan} className="btn btn-retry">
+            <div style={{ textAlign: 'center', margin: '2rem 0' }}>
+              <button onClick={resetScan} style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                padding: '0.75rem 1.5rem',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                background: 'linear-gradient(135deg, #4b5563, #374151)',
+                color: 'white'
+              }}>
                 <i className="fas fa-redo"></i>
                 Scan Ulang
               </button>
@@ -660,61 +954,319 @@ function ScanUpload() {
       )}
 
       {showDetail && (
-        <div className="detail-modal" onClick={toggleDetail}>
-          <div className="detail-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="detail-modal-header">
-              <h2>Fishsnap: AI</h2>
-              <button onClick={toggleDetail} className="modal-close">
-                <i className="fas fa-times"></i>
+        <div 
+          onClick={toggleDetail}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(16, 185, 129, 0.1))',
+            backdropFilter: 'blur(12px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem'
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '24px',
+              maxWidth: '650px',
+              width: '100%',
+              maxHeight: '85vh',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              position: 'relative'
+            }}
+          >
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '2rem 2.5rem',
+              background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(16, 185, 129, 0.05))',
+              borderBottom: '1px solid rgba(37, 99, 235, 0.1)',
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+              backdropFilter: 'blur(20px)'
+            }}>
+              <h2 style={{
+                fontSize: '1.75rem',
+                fontWeight: '800',
+                background: 'linear-gradient(135deg, #2563eb, #10b981)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                margin: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                🐟 Fishsnap: AI
+              </h2>
+              <button onClick={toggleDetail} style={{
+                width: '44px',
+                height: '44px',
+                border: 'none',
+                background: 'rgba(239, 68, 68, 0.1)',
+                color: '#ef4444',
+                borderRadius: '50%',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <i className="fas fa-times" style={{ position: 'relative', zIndex: 1 }}></i>
               </button>
             </div>
             
-            <div className="detail-tabs">
+            <div style={{
+              display: 'flex',
+              padding: '0.5rem',
+              gap: '0.5rem',
+              background: 'rgba(243, 244, 246, 0.5)',
+              margin: '1rem 1.5rem',
+              borderRadius: '16px',
+              position: 'relative'
+            }}>
               <button 
-                className={`detail-tab ${activeTab === 'makanan' ? 'active' : ''}`}
                 onClick={() => setActiveTab('makanan')}
+                style={{
+                  flex: 1,
+                  padding: '1rem 1.5rem',
+                  border: 'none',
+                  background: activeTab === 'makanan' ? 'linear-gradient(135deg, #2563eb, #10b981)' : 'transparent',
+                  color: activeTab === 'makanan' ? 'white' : '#4b5563',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  borderRadius: '12px',
+                  position: 'relative',
+                  zIndex: 1,
+                  overflow: 'hidden',
+                  transition: 'all 0.3s'
+                }}
               >
                 Makanan
               </button>
               <button 
-                className={`detail-tab ${activeTab === 'budidaya' ? 'active' : ''}`}
                 onClick={() => setActiveTab('budidaya')}
+                style={{
+                  flex: 1,
+                  padding: '1rem 1.5rem',
+                  border: 'none',
+                  background: activeTab === 'budidaya' ? 'linear-gradient(135deg, #2563eb, #10b981)' : 'transparent',
+                  color: activeTab === 'budidaya' ? 'white' : '#4b5563',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  borderRadius: '12px',
+                  position: 'relative',
+                  zIndex: 1,
+                  overflow: 'hidden',
+                  transition: 'all 0.3s'
+                }}
               >
                 Budidaya
               </button>
             </div>
             
-            <div className="detail-content-area">
+            <div style={{
+              padding: '1.5rem 2.5rem 2.5rem',
+              maxHeight: '50vh',
+              overflowY: 'auto'
+            }}>
               {activeTab === 'makanan' && (
-                <div className="detail-text">
-                  <p>Ikan ini biasanya diolah menjadi masakan tumis goreng berikut ini aneka aneka olahan yang dapat kamu coba:</p>
-                  <ul>
-                    {makananItems.map((item, index) => (
-                      <li key={index} onClick={() => toggleExpand(index)} style={{cursor: 'pointer'}}>
-                        {item.name}
-                        {expandedItems[activeTab]?.[index] && (
-                          <div className="dropdown-content">
-                            <img src={item.image} alt={item.name} style={{width: '100%', marginBottom: '10px'}} />
-                            <p>{item.resep}</p>
-                          </div>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
+                <div style={{ color: '#374151', lineHeight: 1.8 }}>
+                  {isLoadingRecipes ? (
+                    <div style={{ textAlign: 'center', padding: '2rem' }}>
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        border: '3px solid #e5e7eb',
+                        borderTop: '3px solid #2563eb',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite',
+                        margin: '0 auto 1rem'
+                      }}></div>
+                      <p style={{ color: '#6b7280' }}>Memuat resep...</p>
+                    </div>
+                  ) : recipes.length > 0 ? (
+                    <>
+                      <p style={{ margin: '0 0 1.5rem 0', fontSize: '1rem', fontWeight: '500', color: '#4b5563' }}>
+                        Berikut adalah {recipes.length} resep untuk ikan {analysisResult?.name}:
+                      </p>
+                      <ul style={{ listStyle: 'none', padding: 0, margin: '1rem 0', display: 'grid', gap: '1rem' }}>
+                        {recipes.map((recipe, index) => (
+                          <li 
+                            key={recipe.id}
+                            onClick={() => toggleExpand(index)} 
+                            style={{
+                              padding: '1.25rem',
+                              paddingLeft: '3rem',
+                              position: 'relative',
+                              fontSize: '0.95rem',
+                              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(249, 250, 251, 0.9))',
+                              borderRadius: '16px',
+                              border: '1px solid rgba(37, 99, 235, 0.1)',
+                              cursor: 'pointer',
+                              fontWeight: '500',
+                              color: '#1f2937',
+                              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                              overflow: 'hidden',
+                              transition: 'all 0.3s'
+                            }}
+                          >
+                            <div style={{
+                              position: 'absolute',
+                              left: '1rem',
+                              top: '1.25rem',
+                              color: '#10b981',
+                              fontSize: '0.875rem'
+                            }}>▶</div>
+                            {recipe.title}
+                            {expandedItems[activeTab]?.[index] && (
+                              <div style={{
+                                marginTop: '1rem',
+                                paddingTop: '1rem',
+                                borderTop: '2px solid rgba(37, 99, 235, 0.1)'
+                              }}>
+                                {recipe.image_url && (
+                                  <img 
+                                    src={recipe.image_url} 
+                                    alt={recipe.title} 
+                                    style={{
+                                      width: '100%',
+                                      borderRadius: '12px',
+                                      marginBottom: '1rem',
+                                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                                    }}
+                                  />
+                                )}
+                                <div style={{ marginBottom: '1rem' }}>
+                                  <strong style={{ color: '#2563eb', display: 'block', marginBottom: '0.5rem' }}>
+                                    Bahan-bahan:
+                                  </strong>
+                                  <p style={{ margin: 0, lineHeight: 1.7, whiteSpace: 'pre-line' }}>
+                                    {recipe.ingredients}
+                                  </p>
+                                </div>
+                                <div>
+                                  <strong style={{ color: '#2563eb', display: 'block', marginBottom: '0.5rem' }}>
+                                    Cara Membuat:
+                                  </strong>
+                                  <div style={{ margin: 0, lineHeight: 1.7 }}>
+                                    {formatInstructions(recipe.instructions).map((step, idx) => (
+                                      <div key={idx} style={{
+                                        position: 'relative',
+                                        paddingLeft: '2.5rem',
+                                        marginBottom: '0.75rem'
+                                      }}>
+                                        <div style={{
+                                          position: 'absolute',
+                                          left: 0,
+                                          top: 0,
+                                          width: '1.5rem',
+                                          height: '1.5rem',
+                                          background: 'linear-gradient(135deg, #2563eb, #10b981)',
+                                          color: 'white',
+                                          borderRadius: '50%',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          fontWeight: '700',
+                                          fontSize: '0.75rem'
+                                        }}>
+                                          {idx + 1}
+                                        </div>
+                                        {step}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '2rem' }}>
+                      <i className="fas fa-utensils" style={{ fontSize: '3rem', color: '#d1d5db', marginBottom: '1rem' }}></i>
+                      <p style={{ color: '#6b7280', margin: 0 }}>
+                        Belum ada resep tersedia untuk ikan {analysisResult?.name}.
+                      </p>
+                      <p style={{ color: '#9ca3af', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                        Resep akan segera ditambahkan!
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
               
               {activeTab === 'budidaya' && (
-                <div className="detail-text">
-                  <p>Tips budidaya ikan {analysisResult?.name || 'ini'}:</p>
-                  <ul>
+                <div style={{ color: '#374151', lineHeight: 1.8 }}>
+                  <p style={{ margin: '0 0 1.5rem 0', fontSize: '1rem', fontWeight: '500', color: '#4b5563' }}>
+                    Tips budidaya ikan {analysisResult?.name || 'ini'}:
+                  </p>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: '1rem 0', display: 'grid', gap: '1rem' }}>
                     {budidayaItems.map((item, index) => (
-                      <li key={index} onClick={() => toggleExpand(index)} style={{cursor: 'pointer'}}>
+                      <li 
+                        key={index}
+                        onClick={() => toggleExpand(index)} 
+                        style={{
+                          padding: '1.25rem',
+                          paddingLeft: '3rem',
+                          position: 'relative',
+                          fontSize: '0.95rem',
+                          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(249, 250, 251, 0.9))',
+                          borderRadius: '16px',
+                          border: '1px solid rgba(37, 99, 235, 0.1)',
+                          cursor: 'pointer',
+                          fontWeight: '500',
+                          color: '#1f2937',
+                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                          overflow: 'hidden',
+                          transition: 'all 0.3s'
+                        }}
+                      >
+                        <div style={{
+                          position: 'absolute',
+                          left: '1rem',
+                          top: '1.25rem',
+                          color: '#10b981',
+                          fontSize: '0.875rem'
+                        }}>▶</div>
                         {item.name}
                         {expandedItems[activeTab]?.[index] && (
-                          <div className="dropdown-content">
-                            <img src={item.image} alt={item.name} style={{width: '100%', marginBottom: '10px'}} />
-                            <p>{item.resep}</p>
+                          <div style={{
+                            marginTop: '1rem',
+                            paddingTop: '1rem',
+                            borderTop: '2px solid rgba(37, 99, 235, 0.1)'
+                          }}>
+                            <img 
+                              src={item.image} 
+                              alt={item.name} 
+                              style={{
+                                width: '100%',
+                                borderRadius: '12px',
+                                marginBottom: '1rem',
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                              }}
+                            />
+                            <p style={{ color: '#374151', lineHeight: 1.7, fontSize: '0.9rem', margin: 0 }}>
+                              {item.resep}
+                            </p>
                           </div>
                         )}
                       </li>
@@ -726,6 +1278,13 @@ function ScanUpload() {
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

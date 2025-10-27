@@ -1,5 +1,5 @@
 // FishSellers.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import styles from "../../styles/admin/Dashboard.module.css";
 import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
@@ -15,6 +15,7 @@ function FishSellers() {
     bahan: "",
     cara: "",
   });
+  const [previewImage, setPreviewImage] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -22,16 +23,16 @@ function FishSellers() {
 
   // Hardcoded fish list as per user request
   const fishes = [
-    { id: 1, nama: "Bandeng", icon: "🐟" },
-    { id: 2, nama: "Cupang", icon: "🐠" },
-    { id: 3, nama: "Gabus", icon: "🐡" },
-    { id: 4, nama: "Gurami", icon: "🐟" },
-    { id: 5, nama: "Kakap", icon: "🐠" },
-    { id: 6, nama: "Kerapu", icon: "🐡" },
-    { id: 7, nama: "Mujair", icon: "🐟" },
-    { id: 8, nama: "Nila", icon: "🐠" },
-    { id: 9, nama: "Tenggiri", icon: "🐡" },
-    { id: 10, nama: "Tongkol", icon: "🐟" },
+    { id: 1, nama: "Ikan Bandeng", icon: "🐟" },
+    { id: 2, nama: "Ikan Cupang", icon: "🐠" },
+    { id: 3, nama: "Ikan Gabus", icon: "🐡" },
+    { id: 4, nama: "Ikan Gurami", icon: "🐟" },
+    { id: 5, nama: "Ikan Kakap", icon: "🐠" },
+    { id: 6, nama: "Ikan Kerapu", icon: "🐡" },
+    { id: 7, nama: "Ikan Mujair", icon: "🐟" },
+    { id: 8, nama: "Ikan Nila", icon: "🐠" },
+    { id: 9, nama: "Ikan Tenggiri", icon: "🐡" },
+    { id: 10, nama: "Ikan Tongkol", icon: "🐟" },
   ];
 
   // API Base URL
@@ -53,11 +54,9 @@ function FishSellers() {
   // Get admin token
   const getAdminToken = async () => {
     let token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-
     if (token) {
       return token;
     }
-
     try {
       const response = await axios.get(`${API_BASE_URL.replace('/api', '')}/admin/token`, {
         withCredentials: true
@@ -70,7 +69,6 @@ function FishSellers() {
     } catch (error) {
       console.error('Error refreshing admin token:', error);
     }
-
     return null;
   };
 
@@ -86,16 +84,109 @@ function FishSellers() {
     };
   };
 
+  // Compress image to base64
+  const compressImage = (file, maxWidth = 800, quality = 0.7) => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxWidth) {
+            width = (width * maxWidth) / height;
+            height = maxWidth;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedBase64);
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // Handle file upload
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validasi file type
+      if (!file.type.startsWith('image/')) {
+        await Swal.fire({
+          icon: 'warning',
+          title: 'File Tidak Valid',
+          text: 'File harus berupa gambar!',
+          confirmButtonColor: '#f59e0b'
+        });
+        return;
+      }
+
+      // Validasi ukuran file (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        await Swal.fire({
+          icon: 'warning',
+          title: 'File Terlalu Besar',
+          text: 'Ukuran file maksimal 5MB!',
+          confirmButtonColor: '#f59e0b'
+        });
+        return;
+      }
+
+      try {
+        setPreviewImage('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjEwMCIgeT0iNzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY0NzQ4YiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+TWVtcHJvc2VzLi4uPC90ZXh0Pgo8L3N2Zz4=');
+        const compressedBase64 = await compressImage(file);
+        const sizeInMB = (compressedBase64.length * 3 / 4) / (1024 * 1024);
+        if (sizeInMB > 10) {
+          await Swal.fire({
+            icon: 'error',
+            title: 'Gambar Terlalu Besar',
+            text: 'Gambar terlalu besar setelah dikompresi. Coba gunakan gambar yang lebih kecil.',
+            confirmButtonColor: '#dc2626'
+          });
+          setPreviewImage('');
+          return;
+        }
+        setPreviewImage(compressedBase64);
+        setRecipeData(prev => ({ ...prev, gambar: compressedBase64 }));
+        Toast.fire({
+          icon: 'success',
+          title: 'Gambar berhasil diunggah'
+        });
+      } catch (error) {
+        console.error('Error processing image:', error);
+        await Swal.fire({
+          icon: 'error',
+          title: 'Gagal Memproses Gambar',
+          text: 'Gagal memproses gambar. Coba gunakan gambar lain.',
+          confirmButtonColor: '#dc2626'
+        });
+        setPreviewImage('');
+      }
+    }
+  };
+
   const handleOpenModal = (fish) => {
     setSelectedFish(fish);
     setShowModal(true);
     setError(null);
     setSuccess(null);
+    setPreviewImage('');
+    setRecipeData({ judul: "", gambar: "", bahan: "", cara: "" });
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
     setRecipeData({ judul: "", gambar: "", bahan: "", cara: "" });
+    setPreviewImage('');
     setError(null);
     setSuccess(null);
   };
@@ -145,12 +236,23 @@ function FishSellers() {
       });
       return;
     }
+    if (!recipeData.gambar) {
+      setError('Gambar harus diunggah.');
+      setSubmitting(false);
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Gambar Belum Dipilih',
+        text: 'Gambar harus diunggah!',
+        confirmButtonColor: '#f59e0b'
+      });
+      return;
+    }
 
     try {
       const payload = {
         fish_name: selectedFish.nama,
         title: recipeData.judul,
-        image_url: recipeData.gambar || null,
+        image_url: recipeData.gambar,
         ingredients: recipeData.bahan,
         instructions: recipeData.cara,
       };
@@ -192,21 +294,15 @@ function FishSellers() {
       <main className={styles.mainContent}>
         <Header />
         <div className={styles.verificationSection}>
-          {/* Header Section */}
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>
-              <svg
-                className={styles.sectionIcon}
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
+              <svg className={styles.sectionIcon} viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2c5.4 0 10 4.6 10 10 0 5.4-4.6 10-10 10S2 17.4 2 12 6.6 2 12 2zm-1 17.93c3.94-.49 7-3.85 7-7.93 0-.62-.08-1.21-.21-1.79L9 10v1c0 1.1-.9 2-2 2s-2-.9-2-2V9c0-1.1.9-2 2-2s2 .9 2 2v.17l8.79-.21C17.21 8.34 16.62 8.26 16 8.26c-4.08 0-7.44 3.06-7.93 7H9c-.55 0-1 .45-1 1s.45 1 1 1h-.93z" />
               </svg>
               Resep Ikan
             </h2>
           </div>
 
-          {/* Fish Table */}
           <div style={tableStyles.wrapper}>
             <table style={tableStyles.table}>
               <thead style={tableStyles.thead}>
@@ -227,8 +323,8 @@ function FishSellers() {
                       Nama Ikan
                     </div>
                   </th>
-                  <th style={{...tableStyles.th, textAlign: 'center'}}>
-                    <div style={{...tableStyles.thContent, justifyContent: 'center'}}>
+                  <th style={{ ...tableStyles.th, textAlign: 'center' }}>
+                    <div style={{ ...tableStyles.thContent, justifyContent: 'center' }}>
                       <svg style={tableStyles.thIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                       </svg>
@@ -251,7 +347,7 @@ function FishSellers() {
                         <span style={tableStyles.fishName}>{fish.nama}</span>
                       </div>
                     </td>
-                    <td style={{...tableStyles.td, textAlign: 'center'}}>
+                    <td style={{ ...tableStyles.td, textAlign: 'center' }}>
                       <button
                         onClick={() => handleOpenModal(fish)}
                         style={tableStyles.addBtn}
@@ -283,7 +379,6 @@ function FishSellers() {
         {showModal && (
           <div style={modalStyles.overlay}>
             <div style={modalStyles.container}>
-              {/* Header Modal */}
               <div style={modalStyles.header}>
                 <div style={modalStyles.headerContent}>
                   <div style={modalStyles.fishIconWrapper}>
@@ -313,7 +408,6 @@ function FishSellers() {
                 </button>
               </div>
 
-              {/* Form Content */}
               <form onSubmit={handleSubmit} style={modalStyles.form}>
                 {/* Judul Resep */}
                 <div style={modalStyles.formGroup}>
@@ -321,43 +415,59 @@ function FishSellers() {
                     <svg style={modalStyles.labelIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                     </svg>
-                    Judul Resep
+                    Judul Resep *
                   </label>
                   <input
                     type="text"
                     name="judul"
-                    placeholder="Contoh: Ikan Lele Goreng Kremes"
+                    placeholder="Contoh: Bandeng Presto"
                     value={recipeData.judul}
                     onChange={handleChange}
-                    style={modalStyles.input}
+                    style={{
+                      ...modalStyles.input,
+                      border: `2px solid ${recipeData.judul.length > 0 && recipeData.judul.length < 3 ? '#dc2626' : '#e5e7eb'}`
+                    }}
                     onFocus={(e) => {
                       e.target.style.borderColor = '#0891b2';
                       e.target.style.boxShadow = '0 0 0 3px rgba(8, 145, 178, 0.1)';
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = '#e5e7eb';
+                      e.target.style.borderColor = recipeData.judul.length > 0 && recipeData.judul.length < 3 ? '#dc2626' : '#e5e7eb';
                       e.target.style.boxShadow = 'none';
                     }}
                     required
                     disabled={submitting}
                   />
+                  {recipeData.judul.length > 0 && recipeData.judul.length < 3 && (
+                    <div style={{ fontSize: '0.8rem', color: '#dc2626', marginTop: '0.5rem' }}>
+                      Judul minimal 3 karakter (saat ini: {recipeData.judul.length} karakter)
+                    </div>
+                  )}
+                  {recipeData.judul.length >= 3 && (
+                    <div style={{ fontSize: '0.8rem', color: '#059669', marginTop: '0.5rem' }}>
+                      ✓ Judul valid ({recipeData.judul.length}/100 karakter)
+                    </div>
+                  )}
                 </div>
 
-                {/* URL Gambar */}
+                {/* Gambar */}
                 <div style={modalStyles.formGroup}>
                   <label style={modalStyles.label}>
                     <svg style={modalStyles.labelIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    URL Gambar (Opsional)
+                    Gambar *
                   </label>
                   <input
-                    type="text"
-                    name="gambar"
-                    placeholder="https://example.com/gambar-resep.jpg"
-                    value={recipeData.gambar}
-                    onChange={handleChange}
-                    style={modalStyles.input}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    disabled={submitting}
+                    style={{
+                      ...modalStyles.input,
+                      backgroundColor: '#f8fafc',
+                      cursor: submitting ? 'not-allowed' : 'pointer'
+                    }}
                     onFocus={(e) => {
                       e.target.style.borderColor = '#0891b2';
                       e.target.style.boxShadow = '0 0 0 3px rgba(8, 145, 178, 0.1)';
@@ -366,8 +476,58 @@ function FishSellers() {
                       e.target.style.borderColor = '#e5e7eb';
                       e.target.style.boxShadow = 'none';
                     }}
-                    disabled={submitting}
                   />
+                  <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.5rem' }}>
+                    Format yang didukung: JPG, PNG, GIF. Maksimal 5MB.
+                  </div>
+                  {previewImage && (
+                    <div style={{ marginTop: '1rem' }}>
+                      <div style={{ fontSize: '0.9rem', fontWeight: '500', color: '#1e293b', marginBottom: '0.5rem' }}>
+                        Preview:
+                      </div>
+                      <div style={{ position: 'relative', display: 'inline-block' }}>
+                        <img
+                          src={previewImage}
+                          alt="Preview"
+                          style={{
+                            width: '200px',
+                            height: '150px',
+                            objectFit: 'cover',
+                            borderRadius: '8px',
+                            border: '2px solid #e2e8f0'
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPreviewImage('');
+                            setRecipeData(prev => ({ ...prev, gambar: '' }));
+                          }}
+                          disabled={submitting}
+                          style={{
+                            position: 'absolute',
+                            top: '5px',
+                            right: '5px',
+                            background: 'rgba(220, 38, 38, 0.9)',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '24px',
+                            height: '24px',
+                            color: 'white',
+                            cursor: submitting ? 'not-allowed' : 'pointer',
+                            fontSize: '14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            opacity: submitting ? 0.6 : 1
+                          }}
+                          title="Hapus gambar"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Bahan-bahan */}
@@ -376,25 +536,39 @@ function FishSellers() {
                     <svg style={modalStyles.labelIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2m-6 4h6" />
                     </svg>
-                    Bahan-bahan
+                    Bahan-bahan *
                   </label>
                   <textarea
                     name="bahan"
-                    placeholder="Masukkan bahan-bahan yang diperlukan&#10;Contoh:&#10;- 500 gr ikan lele&#10;- 2 sdm tepung bumbu&#10;- 1 sdt garam&#10;- dst..."
+                    placeholder="Masukkan bahan-bahan yang diperlukan&#10;Contoh:&#10;- 500 gr ikan bandeng&#10;- 2 sdm tepung bumbu&#10;- 1 sdt garam&#10;- dst..."
                     value={recipeData.bahan}
                     onChange={handleChange}
-                    style={{...modalStyles.input, ...modalStyles.textarea}}
+                    style={{
+                      ...modalStyles.input,
+                      ...modalStyles.textarea,
+                      border: `2px solid ${recipeData.bahan.length > 0 && recipeData.bahan.length < 10 ? '#dc2626' : '#e5e7eb'}`
+                    }}
                     onFocus={(e) => {
                       e.target.style.borderColor = '#0891b2';
                       e.target.style.boxShadow = '0 0 0 3px rgba(8, 145, 178, 0.1)';
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = '#e5e7eb';
+                      e.target.style.borderColor = recipeData.bahan.length > 0 && recipeData.bahan.length < 10 ? '#dc2626' : '#e5e7eb';
                       e.target.style.boxShadow = 'none';
                     }}
                     required
                     disabled={submitting}
                   />
+                  {recipeData.bahan.length > 0 && recipeData.bahan.length < 10 && (
+                    <div style={{ fontSize: '0.8rem', color: '#dc2626', marginTop: '0.5rem' }}>
+                      Bahan minimal 10 karakter (saat ini: {recipeData.bahan.length} karakter)
+                    </div>
+                  )}
+                  {recipeData.bahan.length >= 10 && (
+                    <div style={{ fontSize: '0.8rem', color: '#059669', marginTop: '0.5rem' }}>
+                      ✓ Bahan valid ({recipeData.bahan.length}/1000 karakter)
+                    </div>
+                  )}
                 </div>
 
                 {/* Cara Memasak */}
@@ -403,28 +577,41 @@ function FishSellers() {
                     <svg style={modalStyles.labelIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
-                    Cara Memasak
+                    Cara Memasak *
                   </label>
                   <textarea
                     name="cara"
                     placeholder="Masukkan langkah-langkah memasak&#10;Contoh:&#10;1. Bersihkan ikan dan lumuri dengan garam&#10;2. Diamkan selama 15 menit&#10;3. Baluri ikan dengan tepung bumbu&#10;4. Goreng hingga kecoklatan&#10;5. dst..."
                     value={recipeData.cara}
                     onChange={handleChange}
-                    style={{...modalStyles.input, ...modalStyles.textareaLarge}}
+                    style={{
+                      ...modalStyles.input,
+                      ...modalStyles.textareaLarge,
+                      border: `2px solid ${recipeData.cara.length > 0 && recipeData.cara.length < 10 ? '#dc2626' : '#e5e7eb'}`
+                    }}
                     onFocus={(e) => {
                       e.target.style.borderColor = '#0891b2';
                       e.target.style.boxShadow = '0 0 0 3px rgba(8, 145, 178, 0.1)';
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = '#e5e7eb';
+                      e.target.style.borderColor = recipeData.cara.length > 0 && recipeData.cara.length < 10 ? '#dc2626' : '#e5e7eb';
                       e.target.style.boxShadow = 'none';
                     }}
                     required
                     disabled={submitting}
                   />
+                  {recipeData.cara.length > 0 && recipeData.cara.length < 10 && (
+                    <div style={{ fontSize: '0.8rem', color: '#dc2626', marginTop: '0.5rem' }}>
+                      Cara memasak minimal 10 karakter (saat ini: {recipeData.cara.length} karakter)
+                    </div>
+                  )}
+                  {recipeData.cara.length >= 10 && (
+                    <div style={{ fontSize: '0.8rem', color: '#059669', marginTop: '0.5rem' }}>
+                      ✓ Cara memasak valid ({recipeData.cara.length}/1000 karakter)
+                    </div>
+                  )}
                 </div>
 
-                {/* Error/Success Message */}
                 {error && (
                   <div style={{ padding: '0.75rem', background: '#fee2e2', borderRadius: '8px', marginBottom: '1rem', color: '#b91c1c' }}>
                     {error}
@@ -436,7 +623,6 @@ function FishSellers() {
                   </div>
                 )}
 
-                {/* Action Buttons */}
                 <div style={modalStyles.actions}>
                   <button
                     type="button"
@@ -482,6 +668,10 @@ function FishSellers() {
         )}
       </main>
       <style jsx>{`
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
@@ -490,8 +680,6 @@ function FishSellers() {
     </div>
   );
 }
-
-// ==================== STYLES ====================
 
 // Table Styles
 const tableStyles = {
@@ -702,7 +890,6 @@ const modalStyles = {
   },
   input: {
     width: '100%',
-    border: '2px solid #e5e7eb',
     padding: '0.75rem',
     borderRadius: '12px',
     transition: 'all 0.2s ease',

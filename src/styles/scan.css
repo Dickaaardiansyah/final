@@ -585,45 +585,56 @@
 }
 
 /* Detail Modal */
+/* Detail Modal - Modern Design */
 .detail-modal {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(16, 185, 129, 0.1));
+  backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
   padding: 1rem;
-  animation: fadeIn 0.3s ease-out;
+  animation: modalFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@keyframes modalFadeIn {
+  from { 
+    opacity: 0;
+    background: rgba(0, 0, 0, 0);
+  }
+  to { 
+    opacity: 1;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(16, 185, 129, 0.1));
+  }
 }
 
 .detail-modal-content {
-  background: var(--white);
-  border-radius: var(--border-radius-lg);
-  max-width: 600px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  max-width: 650px;
   width: 100%;
-  max-height: 80vh;
-  overflow-y: auto;
-  box-shadow: var(--shadow-xl);
-  animation: scaleIn 0.3s ease-out;
+  max-height: 85vh;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 
+              0 0 0 1px rgba(255, 255, 255, 0.1);
+  animation: modalSlideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  position: relative;
 }
 
-@keyframes scaleIn {
+@keyframes modalSlideUp {
   from { 
-    transform: scale(0.9);
+    transform: translateY(50px) scale(0.95);
     opacity: 0;
   }
   to { 
-    transform: scale(1);
+    transform: translateY(0) scale(1);
     opacity: 1;
   }
 }
@@ -632,246 +643,423 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.5rem 2rem;
-  border-bottom: 1px solid var(--gray-200);
-  background: var(--white);
+  padding: 2rem 2.5rem;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(16, 185, 129, 0.05));
+  border-bottom: 1px solid rgba(37, 99, 235, 0.1);
   position: sticky;
   top: 0;
   z-index: 10;
+  backdrop-filter: blur(20px);
 }
 
 .detail-modal-header h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.75rem;
+  font-weight: 800;
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  animation: titleSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+}
+
+@keyframes titleSlideIn {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.detail-modal-header h2::before {
+  content: '🐟';
+  font-size: 1.5rem;
+  animation: fishSwim 2s ease-in-out infinite;
+}
+
+@keyframes fishSwim {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(5px) rotate(-5deg); }
+  75% { transform: translateX(-5px) rotate(5deg); }
 }
 
 .modal-close {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border: none;
-  background: var(--gray-100);
-  color: var(--gray-600);
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger-color);
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: var(--transition);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: buttonFadeIn 0.6s ease-out 0.3s both;
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes buttonFadeIn {
+  from {
+    transform: scale(0) rotate(-180deg);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.modal-close::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+}
+
+.modal-close:hover::before {
+  width: 100%;
+  height: 100%;
 }
 
 .modal-close:hover {
-  background: var(--gray-200);
-  color: var(--gray-800);
-  transform: scale(1.1);
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger-dark);
+  transform: rotate(90deg) scale(1.1);
 }
 
-/* Detail Tabs */
+.modal-close i {
+  position: relative;
+  z-index: 1;
+}
+
+/* Detail Tabs - Modern Design */
 .detail-tabs {
   display: flex;
-  padding: 1rem 2rem 0;
+  padding: 0.5rem;
   gap: 0.5rem;
-  border-bottom: 2px solid var(--gray-200);
-  background: var(--white);
+  background: rgba(243, 244, 246, 0.5);
+  margin: 1rem 1.5rem;
+  border-radius: 16px;
+  position: relative;
 }
 
 .detail-tab {
   flex: 1;
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 1.5rem;
   border: none;
   background: transparent;
   color: var(--gray-600);
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: var(--transition);
-  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 12px;
   position: relative;
+  z-index: 1;
+  overflow: hidden;
 }
 
-.detail-tab::after {
+.detail-tab::before {
   content: '';
   position: absolute;
-  bottom: -2px;
+  top: 0;
   left: 0;
   right: 0;
-  height: 2px;
-  background: transparent;
-  transition: var(--transition);
+  bottom: 0;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
 }
 
 .detail-tab.active {
-  background: var(--secondary-color);
   color: var(--white);
-  font-weight: 600;
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
-.detail-tab.active::after {
-  background: var(--secondary-color);
+.detail-tab.active::before {
+  opacity: 1;
 }
 
 .detail-tab:not(.active):hover {
-  background: var(--gray-100);
+  background: rgba(255, 255, 255, 0.8);
   color: var(--gray-800);
+  transform: translateY(-2px);
 }
 
-/* Detail Content */
+/* Detail Content - Modern Design */
 .detail-content-area {
-  padding: 2rem;
+  padding: 1.5rem 2.5rem 2.5rem;
+  max-height: 50vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) var(--gray-200);
+}
+
+.detail-content-area::-webkit-scrollbar {
+  width: 8px;
+}
+
+.detail-content-area::-webkit-scrollbar-track {
+  background: var(--gray-100);
+  border-radius: 10px;
+}
+
+.detail-content-area::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  border-radius: 10px;
 }
 
 .detail-text {
   color: var(--gray-700);
   line-height: 1.8;
+  animation: contentFadeIn 0.6s ease-out 0.4s both;
+}
+
+@keyframes contentFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .detail-text p {
-  margin: 0 0 1rem 0;
+  margin: 0 0 1.5rem 0;
   font-size: 1rem;
+  font-weight: 500;
+  color: var(--gray-600);
 }
 
 .detail-text ul {
   list-style: none;
   padding: 0;
   margin: 1rem 0;
+  display: grid;
+  gap: 1rem;
 }
 
 .detail-text li {
-  padding: 0.75rem 0;
-  padding-left: 1.5rem;
+  padding: 1.25rem;
+  padding-left: 3rem;
   position: relative;
   font-size: 0.95rem;
-  border-bottom: 1px solid var(--gray-200);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(249, 250, 251, 0.9));
+  border-radius: 16px;
+  border: 1px solid rgba(37, 99, 235, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--gray-800);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  animation: itemSlideIn 0.5s ease-out both;
+  animation-delay: calc(var(--item-index) * 0.1s);
 }
 
-.detail-text li:last-child {
-  border-bottom: none;
+.detail-text li:nth-child(1) { --item-index: 1; }
+.detail-text li:nth-child(2) { --item-index: 2; }
+.detail-text li:nth-child(3) { --item-index: 3; }
+.detail-text li:nth-child(4) { --item-index: 4; }
+
+@keyframes itemSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .detail-text li::before {
-  content: '>';
+  content: '▶';
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--secondary-color);
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+}
+
+.detail-text li::after {
+  content: '';
   position: absolute;
   left: 0;
-  color: var(--secondary-color);
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+}
+
+.detail-text li:hover {
+  transform: translateX(8px);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+  border-color: var(--primary-color);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(249, 250, 251, 1));
+}
+
+.detail-text li:hover::before {
+  left: 1.25rem;
+  color: var(--primary-color);
+}
+
+.detail-text li:hover::after {
+  transform: scaleY(1);
+}
+
+/* Dropdown Content */
+.dropdown-content {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 2px solid rgba(37, 99, 235, 0.1);
+  animation: dropdownSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-content img {
+  width: 100%;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+  animation: imageZoom 0.5s ease-out;
+}
+
+@keyframes imageZoom {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.dropdown-content img:hover {
+  transform: scale(1.02);
+}
+
+.dropdown-content p {
+  color: var(--gray-700);
+  line-height: 1.7;
+  font-size: 0.9rem;
+  margin: 0;
+  padding-left: 0;
+  animation: textFadeIn 0.5s ease-out 0.2s both;
+}
+
+@keyframes textFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Recipe Steps Styling */
+.recipe-steps {
+  list-style: none;
+  counter-reset: step-counter;
+  padding: 0;
+  margin: 0;
+  animation: textFadeIn 0.5s ease-out 0.2s both;
+}
+
+.recipe-steps li {
+  counter-increment: step-counter;
+  position: relative;
+  padding: 0.75rem 0 0.75rem 3rem;
+  color: var(--gray-700);
+  line-height: 1.7;
+  font-size: 0.9rem;
+  border: none !important;
+  margin: 0 !important;
+  background: transparent !important;
+  transition: all 0.3s ease;
+  animation: stepFadeIn 0.4s ease-out both;
+  animation-delay: calc(var(--step-index) * 0.1s);
+}
+
+.recipe-steps li:nth-child(1) { --step-index: 1; }
+.recipe-steps li:nth-child(2) { --step-index: 2; }
+.recipe-steps li:nth-child(3) { --step-index: 3; }
+.recipe-steps li:nth-child(4) { --step-index: 4; }
+.recipe-steps li:nth-child(5) { --step-index: 5; }
+
+@keyframes stepFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.recipe-steps li::before {
+  content: counter(step-counter);
+  position: absolute;
+  left: 0;
+  top: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 700;
+  font-size: 0.875rem;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .scan-container {
-    padding: 1rem 0.75rem;
-    margin: 20px auto;
-  }
-
-  .scan-title {
-    font-size: 2.25rem;
-  }
-
-  .upload-zone {
-    padding: 2rem 1rem;
-  }
-
-  .upload-actions {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .btn {
-    width: 200px;
-  }
-
-  .fish-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .confidence-badge {
-    align-self: flex-start;
-  }
-
-  .detail-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .card-content {
-    padding: 1.5rem;
-  }
-
-  .card-actions {
-    padding: 1rem 1.5rem;
-  }
-
-  .camera-controls {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .success-toast {
-    right: 1rem;
-    left: 1rem;
-    top: 1rem;
-  }
-
-  .detail-modal {
-    padding: 0.5rem;
-  }
-
-  .detail-modal-content {
-    max-height: 90vh;
-  }
-
-  .detail-modal-header {
-    padding: 1rem 1.5rem;
-  }
-
-  .detail-modal-header h2 {
-    font-size: 1.25rem;
-  }
-
-  .detail-tabs {
-    padding: 0.75rem 1.5rem 0;
-  }
-
-  .detail-tab {
-    padding: 0.6rem 1rem;
-    font-size: 0.9rem;
-  }
-
-  .detail-content-area {
-    padding: 1.5rem;
-  }
-
-  .detail-text p {
-    font-size: 0.95rem;
-  }
-
-  .detail-text li {
-    font-size: 0.9rem;
-    padding: 0.6rem 0;
-    padding-left: 1.25rem;
-  }
+.recipe-steps li:hover {
+  padding-left: 3.25rem;
+  color: var(--gray-800);
 }
 
-@media (max-width: 480px) {
-  .scan-title {
-    font-size: 1.875rem;
-  }
-
-  .upload-icon {
-    font-size: 3rem;
-  }
-
-  .upload-title {
-    font-size: 1.25rem;
-  }
-
-  .fish-name {
-    font-size: 1.5rem;
-  }
+.recipe-steps li:hover::before {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
 }

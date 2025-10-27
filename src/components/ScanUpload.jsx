@@ -12,6 +12,7 @@ function ScanUpload() {
   const [videoStatus, setVideoStatus] = useState('initializing');
   const [showDetail, setShowDetail] = useState(false);
   const [activeTab, setActiveTab] = useState('makanan');
+  const [expandedItems, setExpandedItems] = useState({});
   
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -349,6 +350,7 @@ function ScanUpload() {
       const result = await response.json();
 
       if (result.status === 'success' || result.success) {
+        // Show success message
         const successMessage = document.createElement('div');
         successMessage.className = 'success-toast';
         successMessage.textContent = 'Data berhasil disimpan ke database!';
@@ -377,13 +379,8 @@ function ScanUpload() {
     setIsSaving(false);
     setVideoStatus('initializing');
     setShowDetail(false);
-    setActiveTab('makanan');
+    setExpandedItems({});
     stopCamera();
-    setSavedData({});
-  };
-
-  const toggleDetail = () => {
-    setShowDetail(!showDetail);
   };
 
   const getVideoStatusDisplay = () => {
@@ -397,6 +394,67 @@ function ScanUpload() {
     };
     return statusMap[videoStatus] || videoStatus;
   };
+
+  const toggleDetail = () => {
+    setShowDetail(!showDetail);
+    setExpandedItems({});
+  };
+
+  const toggleExpand = (index) => {
+    setExpandedItems(prev => ({
+      ...prev,
+      [activeTab]: {
+        ...prev[activeTab],
+        [index]: !prev[activeTab]?.[index]
+      }
+    }));
+  };
+
+  const makananItems = [
+    {
+      name: 'Mujair Goreng',
+      resep: '1. Bersihkan ikan mujair, lumuri dengan jeruk nipis dan garam. 2. Haluskan bawang putih, ketumbar, dan garam. 3. Lumuri ikan dengan bumbu halus, diamkan 15 menit. 4. Goreng ikan dalam minyak panas hingga kecoklatan.',
+      image: 'https://img-global.cpcdn.com/recipes/52674138f70a6042/1200x630cq80/photo.jpg'
+    },
+    {
+      name: 'Mujair Bumbu Merah',
+      resep: '1. Cuci bersih ikan, balur garam dan jeruk nipis. 2. Haluskan bumbu (bawang merah, bawang putih, cabai, dll.). 3. Tumis bumbu halus hingga harum, tambah gula merah dan asam jawa. 4. Tuang air, garam, kaldu, masukkan ikan dan masak hingga matang.',
+      image: 'https://cdn.yummy.co.id/content-images/images/20220405/xXQDk9AHAH8i7kxPBkMIS8Fbl8xUalmP-31363439313136393333d41d8cd98f00b204e9800998ecf8427e.jpg?x-oss-process=image/resize,w_600,h_315,m_fill,image/watermark,image_Y29udGVudC1pbWFnZXMvaW1hZ2VzLzIwMjMwNzMxL3dhdGVybWFyay1hcnRpY2xlLnBuZz94LW9zcy1wcm9jZXNzPWltYWdlL3Jlc2l6ZSxQXzEwMA==,g_south,y_0'
+    },
+    {
+      name: 'Ikan Rendang',
+      resep: '1. Haluskan bumbu rendang (cabai, bawang, kemiri, dll.). 2. Tumis bumbu hingga harum, tambah santan. 3. Masukkan ikan mujair yang sudah digoreng setengah matang. 4. Masak dengan api kecil hingga bumbu meresap dan mengental.',
+      image: 'https://berita.japrime.id/uploads/images/202401/image_870x580_65a28523a6bc8.jpg'
+    },
+    {
+      name: 'Ikan Bumbu Kecap',
+      resep: '1. Goreng ikan mujair hingga matang. 2. Tumis bawang merah, bawang putih, cabai. 3. Tambahkan kecap manis, garam, dan air. 4. Masukkan ikan, aduk hingga bumbu meresap.',
+      image: 'https://i.ytimg.com/vi/Ml87OceEH9w/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLBJRj6CoG8xOzeVvvpfxsWazOrZZA'
+    }
+  ];
+
+  const budidayaItems = [
+    {
+      name: 'Pastikan kualitas air tetap bersih dengan pH optimal',
+      resep: '1. Ukur pH air secara rutin (ideal 6.5-8.5). 2. Ganti air secara berkala. 3. Gunakan filter untuk menjaga kebersihan. 4. Hindari overfeeding untuk mencegah pencemaran.',
+      image: 'https://mmc.tirto.id/image/2022/06/14/istock-519915660_ratio-16x9.jpg'
+    },
+    {
+      name: 'Berikan pakan berkualitas sesuai jadwal',
+      resep: '1. Beri pakan 2-3 kali sehari. 2. Gunakan pelet dengan protein 20-30%. 3. Sesuaikan jumlah pakan dengan bobot ikan (2-3% berat tubuh). 4. Pantau sisa pakan untuk hindari polusi.',
+      image: 'https://kuripan.lombokbaratkab.go.id/media/crop/2022/09/08/32-20220908-150322-785183.jpeg'
+    },
+    {
+      name: 'Monitor kesehatan ikan secara rutin',
+      resep: '1. Periksa tanda penyakit seperti lesu atau bintik putih. 2. Karantina ikan sakit. 3. Gunakan obat jika diperlukan. 4. Jaga kepadatan ikan di kolam.',
+      image: 'https://gdm.id/wp-content/uploads/2022/03/ternak-ikan-mujair.jpg'
+    },
+    {
+      name: 'Jaga suhu air sesuai kebutuhan spesies',
+      resep: '1. Ideal suhu 25-30°C. 2. Gunakan pemanas jika diperlukan. 3. Hindari perubahan suhu mendadak. 4. Monitor suhu harian.',
+      image: 'https://i1.wp.com/risetcdn.jatimtimes.com/images/2024/04/19/Ikan-Mujair-di-kolam-air-tawar.-Foto-Xjellypastaa-P6f3c3d128f525baf.jpg?quality=50&resize=1200,675'
+    }
+  ];
 
   return (
     <div className="scan-container">
@@ -631,10 +689,17 @@ function ScanUpload() {
                 <div className="detail-text">
                   <p>Ikan ini biasanya diolah menjadi masakan tumis goreng berikut ini aneka aneka olahan yang dapat kamu coba:</p>
                   <ul>
-                    <li>Mujair Goreng</li>
-                    <li>Mujari Bumbu Merah</li>
-                    <li>Dika Rendang</li>
-                    <li>Maulana Bumbu Kecap</li>
+                    {makananItems.map((item, index) => (
+                      <li key={index} onClick={() => toggleExpand(index)} style={{cursor: 'pointer'}}>
+                        {item.name}
+                        {expandedItems[activeTab]?.[index] && (
+                          <div className="dropdown-content">
+                            <img src={item.image} alt={item.name} style={{width: '100%', marginBottom: '10px'}} />
+                            <p>{item.resep}</p>
+                          </div>
+                        )}
+                      </li>
+                    ))}
                   </ul>
                 </div>
               )}
@@ -643,10 +708,17 @@ function ScanUpload() {
                 <div className="detail-text">
                   <p>Tips budidaya ikan {analysisResult?.name || 'ini'}:</p>
                   <ul>
-                    <li>Pastikan kualitas air tetap bersih dengan pH optimal</li>
-                    <li>Berikan pakan berkualitas sesuai jadwal</li>
-                    <li>Monitor kesehatan ikan secara rutin</li>
-                    <li>Jaga suhu air sesuai kebutuhan spesies</li>
+                    {budidayaItems.map((item, index) => (
+                      <li key={index} onClick={() => toggleExpand(index)} style={{cursor: 'pointer'}}>
+                        {item.name}
+                        {expandedItems[activeTab]?.[index] && (
+                          <div className="dropdown-content">
+                            <img src={item.image} alt={item.name} style={{width: '100%', marginBottom: '10px'}} />
+                            <p>{item.resep}</p>
+                          </div>
+                        )}
+                      </li>
+                    ))}
                   </ul>
                 </div>
               )}

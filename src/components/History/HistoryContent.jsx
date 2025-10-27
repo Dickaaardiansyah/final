@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import FilterTabs from './FilterTabs';
 import StatsOverview from './StatsOverview';
 import FishTransactionList from './FishTransactionList';
 import FishScanDetailModal from './FishScanDetailModal';
 
 function HistoryContent({ searchQuery }) {
   const [fishScans, setFishScans] = useState([]);
-  const [currentFilter, setCurrentFilter] = useState('consumable');
   const [filteredScans, setFilteredScans] = useState([]);
   const [selectedScan, setSelectedScan] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,7 +17,7 @@ function HistoryContent({ searchQuery }) {
         const result = await res.json();
         if (result.status === "success") {
           setFishScans(result.data);
-          setFilteredScans(result.data.filter(scan => scan.fishData.konsumsi === 'Dapat dikonsumsi'));
+          setFilteredScans(result.data); // Tampilkan semua data tanpa filter
         }
       } catch (err) {
         console.error("Error fetching data_ikan:", err);
@@ -28,29 +26,19 @@ function HistoryContent({ searchQuery }) {
     fetchData();
   }, []);
 
-  // Filter scans berdasarkan kategori + search
+  // Filter hanya berdasarkan search query
   useEffect(() => {
     let filtered = fishScans;
 
-    if (currentFilter === 'consumable') {
-      filtered = fishScans.filter(scan => scan.fishData.konsumsi === 'Dapat dikonsumsi');
-    } else if (currentFilter === 'ornamental') {
-      filtered = fishScans.filter(scan => scan.fishData.konsumsi === 'Tidak untuk konsumsi');
-    } else if (currentFilter === 'saved') {
-      filtered = fishScans.filter(scan => scan.status === 'saved');
-    }
-
     if (searchQuery && searchQuery.trim()) {
-      filtered = filtered.filter(scan =>
+      filtered = fishScans.filter(scan =>
         scan.fishData.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         scan.fishData.predicted_class.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     setFilteredScans(filtered);
-  }, [fishScans, currentFilter, searchQuery]);
-
-  const handleFilterChange = (filter) => setCurrentFilter(filter);
+  }, [fishScans, searchQuery]);
 
   const handleViewScan = (scanId) => {
     const scan = fishScans.find(s => s.id === scanId);
@@ -84,17 +72,6 @@ function HistoryContent({ searchQuery }) {
 
   return (
     <div className="history-content">
-      <FilterTabs
-        currentFilter={currentFilter}
-        onFilterChange={handleFilterChange}
-        transactionCounts={{
-          all: fishScans.length,
-          consumable: fishScans.filter(s => s.fishData.konsumsi === 'Dapat dikonsumsi').length,
-          ornamental: fishScans.filter(s => s.fishData.konsumsi === 'Tidak untuk konsumsi').length,
-          saved: fishScans.filter(s => s.status === 'saved').length
-        }}
-      />
-      
       <StatsOverview transactions={filteredScans} />
       
       <FishTransactionList

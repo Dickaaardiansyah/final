@@ -1,6 +1,4 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getCurrentUser } from '../data/userLogin';
 
 function ScanUpload() {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -11,125 +9,37 @@ function ScanUpload() {
   const [stream, setStream] = useState(null);
   const [error, setError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [videoStatus, setVideoStatus] = useState('initializing'); // Track video loading state
-  
-  // Permission system states
-  const [userStatus, setUserStatus] = useState(null);
-  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
-  const [isRequestingAccess, setIsRequestingAccess] = useState(false);
-  const [user, setUser] = useState(null);
+  const [videoStatus, setVideoStatus] = useState('initializing');
+  const [showDetail, setShowDetail] = useState(false);
+  const [activeTab, setActiveTab] = useState('makanan');
+  const [expandedItems, setExpandedItems] = useState({});
   
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const navigate = useNavigate();
 
   const API_BASE_URL = 'http://localhost:5000';
 
-  // Check user login status and catalog access
+  // In-memory storage
+  const [savedData, setSavedData] = useState({});
+
   useEffect(() => {
-    checkUserCatalogStatus();
+    if (savedData.analysisResult) {
+      setAnalysisResult(savedData.analysisResult);
+      if (savedData.selectedImage) {
+        setSelectedImage(savedData.selectedImage);
+      }
+    }
   }, []);
 
-  const checkUserCatalogStatus = async () => {
-    try {
-      setIsCheckingStatus(true);
-      
-      const userResult = await getCurrentUser();
-      
-      if (!userResult.success) {
-        setUser(null);
-        setUserStatus({ 
-          can_access_catalog: false, 
-          role: 'guest',
-          request_status: 'none',
-          is_email_verified: false 
-        });
-        setIsCheckingStatus(false);
-        return;
-      }
-
-      setUser(userResult.user);
-
-      const response = await fetch(`${API_BASE_URL}/api/catalog/my-status`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+  useEffect(() => {
+    if (analysisResult) {
+      setSavedData({
+        analysisResult: analysisResult,
+        selectedImage: selectedImage
       });
-
-      if (response.ok) {
-        const result = await response.json();
-        setUserStatus(result.data);
-        console.log('🔍 User catalog status:', result.data);
-      } else {
-        console.error('Failed to get user status:', response.statusText);
-        setUserStatus({ 
-          can_access_catalog: false, 
-          role: 'user',
-          request_status: 'none',
-          is_email_verified: true 
-        });
-      }
-    } catch (error) {
-      console.error('Error checking user status:', error);
-      setUserStatus({ 
-        can_access_catalog: false, 
-        role: user ? 'user' : 'guest',
-        request_status: 'none',
-        is_email_verified: user ? true : false 
-      });
-    } finally {
-      setIsCheckingStatus(false);
     }
-  };
+  }, [analysisResult, selectedImage]);
 
-  // Request catalog access
-  const requestCatalogAccess = () => {
-    navigate('/katalog/daftar');
-  };
-
-  // Show success toast notification
-  const showSuccessToast = (message) => {
-    const toast = document.createElement('div');
-    toast.innerHTML = `
-      <div style="
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: linear-gradient(135deg, #3b82f6, #2563eb);
-        color: white;
-        padding: 16px 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        z-index: 9999;
-        max-width: 400px;
-        animation: slideIn 0.3s ease-out;
-      ">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 20px;">📨</span>
-          <span style="font-weight: 500;">${message}</span>
-        </div>
-      </div>
-    `;
-
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-      }
-    `;
-    document.head.appendChild(style);
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-      toast.remove();
-      style.remove();
-    }, 5000);
-  };
-
-  // Handle file upload
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -153,22 +63,55 @@ function ScanUpload() {
     }
   };
 
-  // FIXED: Enhanced camera start function with proper loading state management
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        setImageFile(file);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setSelectedImage(e.target.result);
+          setError(null);
+          analyzeImage(file);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        alert('Silakan pilih file gambar yang valid');
+      }
+    }
+  };
+
   const startCamera = useCallback(async () => {
     try {
-      // Clean up existing stream
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
 
-      setVideoStatus('requesting'); // Update status
+      setVideoStatus('requesting');
       setError(null);
-      
-      console.log('📷 Starting camera...');
 
       const constraints = {
         video: {
-          facingMode: { ideal: 'environment' }, // Prefer back camera
+          facingMode: { ideal: 'environment' },
           width: { ideal: 1280, max: 1920 },
           height: { ideal: 720, max: 1080 },
           frameRate: { ideal: 30, min: 15 }
@@ -176,60 +119,34 @@ function ScanUpload() {
       };
 
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('📷 Media stream obtained:', mediaStream.getVideoTracks().length, 'video tracks');
-
       setStream(mediaStream);
       setIsCamera(true);
 
-      // Wait for video element to be ready
       await new Promise((resolve) => {
-        setTimeout(resolve, 50); // Small delay to ensure DOM update
+        setTimeout(resolve, 100);
       });
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         
-        // FIXED: Explicitly play the video
         const playPromise = videoRef.current.play();
         if (playPromise !== undefined) {
           await playPromise;
-          console.log('📷 Video started playing');
         }
 
-        // FIXED: Comprehensive video loading event handlers
-        const handleLoadedMetadata = () => {
-          console.log('📷 Metadata loaded:', {
-            width: videoRef.current.videoWidth,
-            height: videoRef.current.videoHeight
-          });
-          setVideoStatus('metadata-loaded');
-        };
-
-        const handleLoadedData = () => {
-          console.log('📷 First frame loaded');
-          setVideoStatus('ready');
-        };
-
-        const handleCanPlay = () => {
-          console.log('📷 Can play through');
-          if (videoStatus !== 'ready') {
-            setVideoStatus('ready');
-          }
-        };
-
+        const handleLoadedMetadata = () => setVideoStatus('metadata-loaded');
+        const handleLoadedData = () => setVideoStatus('ready');
+        const handleCanPlay = () => { if (videoStatus !== 'ready') setVideoStatus('ready'); };
         const handleError = (e) => {
-          console.error('📷 Video error:', e);
           setVideoStatus('error');
           setError('Error memuat video: ' + e.message);
         };
 
-        // Add event listeners
         videoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
         videoRef.current.addEventListener('loadeddata', handleLoadedData);
         videoRef.current.addEventListener('canplay', handleCanPlay);
         videoRef.current.addEventListener('error', handleError);
 
-        // Cleanup function
         videoRef.current._cameraCleanup = () => {
           videoRef.current.removeEventListener('loadedmetadata', handleLoadedMetadata);
           videoRef.current.removeEventListener('loadeddata', handleLoadedData);
@@ -237,24 +154,18 @@ function ScanUpload() {
           videoRef.current.removeEventListener('error', handleError);
         };
 
-        // Fallback: Set ready after 3 seconds if no events fired
         const fallbackTimeout = setTimeout(() => {
-          if (videoStatus !== 'ready') {
-            console.log('📷 Fallback: Setting ready status');
-            setVideoStatus('ready');
-          }
+          if (videoStatus !== 'ready') setVideoStatus('ready');
         }, 3000);
 
         videoRef.current._fallbackTimeout = fallbackTimeout;
       }
 
     } catch (error) {
-      console.error('❌ Camera error:', error);
       setVideoStatus('error');
       
       if (error.name === 'OverconstrainedError') {
         try {
-          console.log('🔄 Trying fallback constraints...');
           const fallbackConstraints = { video: true };
           const fallbackStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
           
@@ -264,14 +175,10 @@ function ScanUpload() {
           if (videoRef.current) {
             videoRef.current.srcObject = fallbackStream;
             const playPromise = videoRef.current.play();
-            if (playPromise !== undefined) {
-              await playPromise;
-            }
+            if (playPromise !== undefined) await playPromise;
           }
           setVideoStatus('ready');
-          console.log('📷 Fallback camera ready');
         } catch (fallbackError) {
-          console.error('❌ Fallback failed:', fallbackError);
           setError(`Gagal mengakses kamera: ${fallbackError.message}`);
         }
       } else {
@@ -280,32 +187,22 @@ function ScanUpload() {
     }
   }, [stream, videoStatus]);
 
-  // FIXED: Enhanced capture function with better readiness checks
   const capturePhoto = useCallback(async () => {
     const video = videoRef.current;
-    if (!video || video.readyState < 2) { // HAVE_CURRENT_DATA or higher
-      console.error('❌ Video not ready for capture:', video?.readyState);
+    if (!video || video.readyState < 2) {
       setError('Video belum siap. Tunggu beberapa detik dan coba lagi.');
       return;
     }
 
     try {
-      console.log('📸 Preparing to capture...');
-      
-      // Wait for next frame to ensure we get fresh data
       await new Promise(resolve => requestAnimationFrame(resolve));
       
       const canvas = canvasRef.current;
-      if (!canvas) {
-        throw new Error('Canvas not available');
-      }
+      if (!canvas) throw new Error('Canvas not available');
 
       const context = canvas.getContext('2d');
-      if (!context) {
-        throw new Error('Canvas context not available');
-      }
+      if (!context) throw new Error('Canvas context not available');
 
-      // FIXED: Ensure dimensions are valid
       const width = video.videoWidth || 640;
       const height = video.videoHeight || 480;
       
@@ -313,42 +210,25 @@ function ScanUpload() {
         throw new Error('Video dimensions not available yet');
       }
 
-      console.log('📸 Capturing with dimensions:', width, 'x', height);
-
-      // Set canvas size
       canvas.width = width;
       canvas.height = height;
-
-      // Draw image
       context.drawImage(video, 0, 0, width, height);
       
-      // Convert to JPEG
       const imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
       const filename = `fish-snapshot-${Date.now()}.jpg`;
-      
-      // Convert to file
       const file = dataURLtoFile(imageDataUrl, filename);
       
-      console.log('📸 Photo captured successfully');
-      
-      // Update state
       setSelectedImage(imageDataUrl);
       setImageFile(file);
-      
-      // Stop camera
       stopCamera();
       setError(null);
-      
-      // Analyze image
       analyzeImage(file);
       
     } catch (error) {
-      console.error('❌ Capture error:', error);
       setError('Gagal mengambil foto: ' + error.message);
     }
   }, [videoStatus]);
 
-  // Convert data URL to File
   const dataURLtoFile = (dataURL, filename) => {
     const arr = dataURL.split(',');
     const mime = arr[0].match(/:(.*?);/)[1];
@@ -361,19 +241,13 @@ function ScanUpload() {
     return new File([u8arr], filename, { type: mime });
   };
 
-  // Enhanced stop camera function
   const stopCamera = useCallback(() => {
-    console.log('🛑 Stopping camera...');
-    
     if (stream) {
-      stream.getTracks().forEach(track => {
-        track.stop();
-      });
+      stream.getTracks().forEach(track => track.stop());
       setStream(null);
     }
     
     if (videoRef.current) {
-      // Clean up event listeners and timeouts
       if (videoRef.current._cameraCleanup) {
         videoRef.current._cameraCleanup();
       }
@@ -383,24 +257,19 @@ function ScanUpload() {
       
       videoRef.current.srcObject = null;
       videoRef.current.pause();
-      videoRef.current.load(); // Reset video element
+      videoRef.current.load();
     }
     
     setIsCamera(false);
     setVideoStatus('stopped');
-    console.log('🛑 Camera stopped');
   }, [stream]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (stream) {
-        stopCamera();
-      }
+      if (stream) stopCamera();
     };
   }, [stopCamera, stream]);
 
-  // Analyze image using API
   const analyzeImage = async (file) => {
     setIsAnalyzing(true);
     setError(null);
@@ -428,13 +297,9 @@ function ScanUpload() {
         const formattedResult = {
           name: result.info.nama_indonesia || result.predicted_class,
           predicted_class: result.predicted_class,
-          confidence: (result.confidence * 100).toFixed(2) + '%',
+          confidence: (result.confidence * 100).toFixed(1) + '%',
           habitat: result.info.habitat || 'Tidak diketahui',
-          konsumsi: result.info.konsumsi || 'Tidak diketahui',
-          top_predictions: result.top_3_predictions.map(pred => ({
-            class: pred.class,
-            confidence: (pred.confidence * 100).toFixed(2) + '%'
-          }))
+          konsumsi: result.info.konsumsi || 'Tidak diketahui'
         };
         
         setAnalysisResult(formattedResult);
@@ -442,14 +307,12 @@ function ScanUpload() {
         throw new Error(result.message || 'Gagal menganalisis gambar');
       }
     } catch (error) {
-      console.error('Error analyzing image:', error);
       setError('Gagal menganalisis gambar: ' + error.message);
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  // Save to database data_ikan
   const saveToDatabase = async () => {
     if (!analysisResult || !selectedImage) {
       alert('Tidak ada data untuk disimpan');
@@ -470,7 +333,6 @@ function ScanUpload() {
       formData.append('confidence', parseFloat(analysisResult.confidence.replace('%', '')));
       formData.append('habitat', analysisResult.habitat);
       formData.append('konsumsi', analysisResult.konsumsi);
-      formData.append('top_predictions', JSON.stringify(analysisResult.top_predictions));
       formData.append('timestamp', new Date().toISOString());
 
       const response = await fetch(`${API_BASE_URL}/api/save-to-dataikan`, {
@@ -488,46 +350,26 @@ function ScanUpload() {
       const result = await response.json();
 
       if (result.status === 'success' || result.success) {
-        alert('Data berhasil disimpan ke database data_ikan!');
+        // Show success message
+        const successMessage = document.createElement('div');
+        successMessage.className = 'success-toast';
+        successMessage.textContent = 'Data berhasil disimpan ke database!';
+        document.body.appendChild(successMessage);
+        
+        setTimeout(() => {
+          successMessage.remove();
+        }, 3000);
       } else {
         throw new Error(result.message || 'Gagal menyimpan data');
       }
 
     } catch (error) {
-      console.error('Error saving to database:', error);
       setError('Gagal menyimpan data: ' + error.message);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Navigate to AddKatalog page with data
-  const goToAddKatalog = () => {
-    if (!analysisResult || !selectedImage) {
-      alert('Tidak ada data hasil analisis');
-      return;
-    }
-
-    const catalogData = {
-      predictedFishName: analysisResult.name || analysisResult.predicted_class,
-      aiAccuracy: parseFloat(analysisResult.confidence.replace('%', '')) / 100,
-      fishImage: selectedImage,
-      namaIkan: analysisResult.name || analysisResult.predicted_class,
-      kategori: analysisResult.konsumsi === 'Dapat dikonsumsi' ? 'Ikan Konsumsi' : 'Ikan Hias',
-      habitat: analysisResult.habitat,
-      tingkatKeamanan: 0.98,
-      amanDikonsumsi: analysisResult.konsumsi === 'Dapat dikonsumsi',
-      jauhDariPabrik: true,
-      scanTimestamp: new Date().toISOString(),
-      originalImageFile: imageFile
-    };
-
-    navigate('/katalog/tambah', { 
-      state: { catalogData } 
-    });
-  };
-
-  // Reset scan
   const resetScan = () => {
     setSelectedImage(null);
     setImageFile(null);
@@ -536,133 +378,11 @@ function ScanUpload() {
     setError(null);
     setIsSaving(false);
     setVideoStatus('initializing');
+    setShowDetail(false);
+    setExpandedItems({});
     stopCamera();
   };
 
-  // Render permission info
-  const renderPermissionInfo = () => {
-    if (isCheckingStatus) {
-      return (
-        <div className="permission-info checking">
-          <i className="fas fa-spinner fa-spin"></i> 
-          Mengecek status akses katalog...
-        </div>
-      );
-    }
-
-    if (!userStatus) return null;
-
-    if (userStatus.role === 'guest') {
-      return (
-        <div className="permission-info guest">
-          <i className="fas fa-info-circle"></i>
-          <span>Silakan login untuk mengakses fitur katalog</span>
-        </div>
-      );
-    }
-
-    if (!userStatus.is_email_verified) {
-      return (
-        <div className="permission-info warning">
-          <i className="fas fa-exclamation-triangle"></i>
-          <span>Verifikasi email terlebih dahulu untuk request akses katalog</span>
-        </div>
-      );
-    }
-
-    if (userStatus.can_access_catalog) {
-      return (
-        <div className="permission-info success">
-          <i className="fas fa-check-circle"></i>
-          <span>Anda dapat menambahkan hasil scan ke katalog publik</span>
-        </div>
-      );
-    }
-
-    if (userStatus.request_status === 'pending') {
-      const requestDate = userStatus.request_date ? new Date(userStatus.request_date) : null;
-      const daysWaiting = requestDate ? Math.floor((new Date() - requestDate) / (1000 * 60 * 60 * 24)) : 0;
-      return (
-        <div className="permission-info pending">
-          <i className="fas fa-clock"></i>
-          <span>
-            Request akses katalog sedang direview admin 
-            {daysWaiting > 0 && ` (${daysWaiting} hari yang lalu)`}
-          </span>
-        </div>
-      );
-    }
-
-    if (userStatus.request_status === 'rejected') {
-      return (
-        <div className="permission-info rejected">
-          <i className="fas fa-times-circle"></i>
-          <span>Request akses katalog ditolak. Alasan: {userStatus.rejection_reason}</span>
-        </div>
-      );
-    }
-
-    return (
-      <div className="permission-info info">
-        <i className="fas fa-info-circle"></i>
-        <span>Request akses katalog untuk dapat berkontribusi ke database publik</span>
-      </div>
-    );
-  };
-
-  // Render catalog button
-  const renderCatalogButton = () => {
-    if (isCheckingStatus || !userStatus) return null;
-
-    if (userStatus.role === 'guest') {
-      return (
-        <button onClick={() => navigate('/login')} className="login-button">
-          <i className="fas fa-sign-in-alt"></i> Login untuk Akses Katalog
-        </button>
-      );
-    }
-
-    if (userStatus.can_access_catalog) {
-      return (
-        <button onClick={goToAddKatalog} className="catalog-button" disabled={isSaving}>
-          <i className="fas fa-plus"></i> Tambah ke Katalog +
-        </button>
-      );
-    }
-
-    if (!userStatus.is_email_verified) {
-      return (
-        <button className="catalog-button disabled" disabled title="Verifikasi email terlebih dahulu">
-          <i className="fas fa-envelope"></i> Verifikasi Email Dulu
-        </button>
-      );
-    }
-
-    if (userStatus.request_status === 'pending') {
-      return (
-        <button className="catalog-button pending" disabled title="Request sedang direview admin">
-          <i className="fas fa-clock"></i> Sedang Direview Admin...
-        </button>
-      );
-    }
-
-    if (userStatus.request_status === 'rejected') {
-      return (
-        <button className="catalog-button rejected" disabled title={`Ditolak: ${userStatus.rejection_reason}`}>
-          <i className="fas fa-ban"></i> Request Ditolak
-        </button>
-      );
-    }
-
-    return (
-      <button onClick={requestCatalogAccess} className="request-access-button" disabled={isRequestingAccess}>
-        <i className="fas fa-paper-plane"></i> 
-        {isRequestingAccess ? 'Mengirim Request...' : 'Request Akses Katalog'}
-      </button>
-    );
-  };
-
-  // FIXED: Enhanced video status display
   const getVideoStatusDisplay = () => {
     const statusMap = {
       'initializing': 'Memulai kamera...',
@@ -675,110 +395,157 @@ function ScanUpload() {
     return statusMap[videoStatus] || videoStatus;
   };
 
+  const toggleDetail = () => {
+    setShowDetail(!showDetail);
+    setExpandedItems({});
+  };
+
+  const toggleExpand = (index) => {
+    setExpandedItems(prev => ({
+      ...prev,
+      [activeTab]: {
+        ...prev[activeTab],
+        [index]: !prev[activeTab]?.[index]
+      }
+    }));
+  };
+
+  const makananItems = [
+    {
+      name: 'Mujair Goreng',
+      resep: '1. Bersihkan ikan mujair, lumuri dengan jeruk nipis dan garam. 2. Haluskan bawang putih, ketumbar, dan garam. 3. Lumuri ikan dengan bumbu halus, diamkan 15 menit. 4. Goreng ikan dalam minyak panas hingga kecoklatan.',
+      image: 'https://img-global.cpcdn.com/recipes/52674138f70a6042/1200x630cq80/photo.jpg'
+    },
+    {
+      name: 'Mujair Bumbu Merah',
+      resep: '1. Cuci bersih ikan, balur garam dan jeruk nipis. 2. Haluskan bumbu (bawang merah, bawang putih, cabai, dll.). 3. Tumis bumbu halus hingga harum, tambah gula merah dan asam jawa. 4. Tuang air, garam, kaldu, masukkan ikan dan masak hingga matang.',
+      image: 'https://cdn.yummy.co.id/content-images/images/20220405/xXQDk9AHAH8i7kxPBkMIS8Fbl8xUalmP-31363439313136393333d41d8cd98f00b204e9800998ecf8427e.jpg?x-oss-process=image/resize,w_600,h_315,m_fill,image/watermark,image_Y29udGVudC1pbWFnZXMvaW1hZ2VzLzIwMjMwNzMxL3dhdGVybWFyay1hcnRpY2xlLnBuZz94LW9zcy1wcm9jZXNzPWltYWdlL3Jlc2l6ZSxQXzEwMA==,g_south,y_0'
+    },
+    {
+      name: 'Ikan Rendang',
+      resep: '1. Haluskan bumbu rendang (cabai, bawang, kemiri, dll.). 2. Tumis bumbu hingga harum, tambah santan. 3. Masukkan ikan mujair yang sudah digoreng setengah matang. 4. Masak dengan api kecil hingga bumbu meresap dan mengental.',
+      image: 'https://berita.japrime.id/uploads/images/202401/image_870x580_65a28523a6bc8.jpg'
+    },
+    {
+      name: 'Ikan Bumbu Kecap',
+      resep: '1. Goreng ikan mujair hingga matang. 2. Tumis bawang merah, bawang putih, cabai. 3. Tambahkan kecap manis, garam, dan air. 4. Masukkan ikan, aduk hingga bumbu meresap.',
+      image: 'https://i.ytimg.com/vi/Ml87OceEH9w/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLBJRj6CoG8xOzeVvvpfxsWazOrZZA'
+    }
+  ];
+
+  const budidayaItems = [
+    {
+      name: 'Pastikan kualitas air tetap bersih dengan pH optimal',
+      resep: '1. Ukur pH air secara rutin (ideal 6.5-8.5). 2. Ganti air secara berkala. 3. Gunakan filter untuk menjaga kebersihan. 4. Hindari overfeeding untuk mencegah pencemaran.',
+      image: 'https://mmc.tirto.id/image/2022/06/14/istock-519915660_ratio-16x9.jpg'
+    },
+    {
+      name: 'Berikan pakan berkualitas sesuai jadwal',
+      resep: '1. Beri pakan 2-3 kali sehari. 2. Gunakan pelet dengan protein 20-30%. 3. Sesuaikan jumlah pakan dengan bobot ikan (2-3% berat tubuh). 4. Pantau sisa pakan untuk hindari polusi.',
+      image: 'https://kuripan.lombokbaratkab.go.id/media/crop/2022/09/08/32-20220908-150322-785183.jpeg'
+    },
+    {
+      name: 'Monitor kesehatan ikan secara rutin',
+      resep: '1. Periksa tanda penyakit seperti lesu atau bintik putih. 2. Karantina ikan sakit. 3. Gunakan obat jika diperlukan. 4. Jaga kepadatan ikan di kolam.',
+      image: 'https://gdm.id/wp-content/uploads/2022/03/ternak-ikan-mujair.jpg'
+    },
+    {
+      name: 'Jaga suhu air sesuai kebutuhan spesies',
+      resep: '1. Ideal suhu 25-30°C. 2. Gunakan pemanas jika diperlukan. 3. Hindari perubahan suhu mendadak. 4. Monitor suhu harian.',
+      image: 'https://i1.wp.com/risetcdn.jatimtimes.com/images/2024/04/19/Ikan-Mujair-di-kolam-air-tawar.-Foto-Xjellypastaa-P6f3c3d128f525baf.jpg?quality=50&resize=1200,675'
+    }
+  ];
+
   return (
     <div className="scan-container">
-      <h2 className="section-title">Scan Ikanmu Disini</h2>
-      <p className="section-subtitle">100% Otomatis dan Gratis</p>
-      
-      {renderPermissionInfo()}
+      <div className="scan-header">
+        <h1 className="scan-title">Fishmap Ai</h1>
+      </div>
       
       {error && (
-        <div className="error-message" style={{
-          backgroundColor: '#fee2e2',
-          border: '1px solid #fecaca',
-          color: '#dc2626',
-          padding: '12px',
-          borderRadius: '8px',
-          margin: '16px 0',
-          textAlign: 'center'
-        }}>
-          <i className="fas fa-exclamation-triangle" style={{ marginRight: '8px' }}></i>
-          {error}
+        <div className="error-message">
+          <i className="fas fa-exclamation-triangle"></i>
+          <span>{error}</span>
         </div>
       )}
       
       {!selectedImage && !isCamera && (
-        <div className="scan-box">
-          <div className="scan-icon">
-            <i className="fas fa-camera"></i>
-          </div>
-          <p className="scan-text">Unggah Gambar atau Gunakan Kamera</p>
-          <p className="scan-hint">Atau Drop File kamu (Max 10MB)</p>
-          
-          <input type="file" id="file-upload" accept="image/*" className="file-input" onChange={handleFileUpload} style={{ display: 'none' }} />
-          
-          <div className="button-group">
-            <label htmlFor="file-upload" className="file-label">
-              <i className="fas fa-upload"></i> Pilih File
-            </label>
-            <button onClick={startCamera} className="camera-button">
-              <i className="fas fa-camera"></i> Buka Kamera
-            </button>
+        <div 
+          className="upload-zone"
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <div className="upload-content">
+            <div className="upload-icon">
+              <i className="fas fa-cloud-upload-alt"></i>
+            </div>
+            <h3 className="upload-title">Upload Gambar Ikan</h3>
+            <p className="upload-description">
+              Drag & drop gambar atau klik untuk memilih file
+            </p>
+            <p className="upload-formats">Mendukung: JPG, PNG, WEBP (Max 10MB)</p>
+            
+            <input 
+              type="file" 
+              id="file-upload" 
+              accept="image/*" 
+              className="file-input" 
+              onChange={handleFileUpload}
+            />
+            
+            <div className="upload-actions">
+              <label htmlFor="file-upload" className="btn btn-primary">
+                <i className="fas fa-folder-open"></i>
+                Pilih File
+              </label>
+              <button onClick={startCamera} className="btn btn-secondary">
+                <i className="fas fa-camera"></i>
+                Buka Kamera
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {isCamera && (
         <div className="camera-container">
-          {/* FIXED: Enhanced video element */}
-          <video 
-            ref={videoRef} 
-            autoPlay 
-            muted 
-            playsInline 
-            className="camera-video"
-            style={{
-              width: '100%',
-              maxWidth: '500px',
-              height: 'auto',
-              borderRadius: '12px',
-              backgroundColor: '#000',
-              objectFit: 'cover',
-              display: 'block',
-              margin: '0 auto'
-            }}
-          />
+          <div className="camera-wrapper">
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              muted 
+              playsInline 
+              className="camera-video"
+            />
+            <canvas ref={canvasRef} className="camera-canvas" />
+          </div>
           
-          <canvas ref={canvasRef} style={{ display: 'none' }} />
-          
-          {/* FIXED: Better status indicator */}
-          <div className="video-status">
-            <div className={`status-indicator ${videoStatus}`}>
-              <i className={
-                videoStatus === 'ready' ? 'fas fa-check-circle' :
-                videoStatus === 'requesting' || videoStatus === 'metadata-loaded' ? 'fas fa-spinner fa-spin' :
-                videoStatus === 'error' ? 'fas fa-exclamation-triangle' : 'fas fa-circle-notch fa-spin'
-              }></i>
-              <span>{getVideoStatusDisplay()}</span>
-            </div>
-            
-            {/* Debug info - only in development */}
-            {process.env.NODE_ENV === 'development' && videoRef.current && (
-              <div style={{ 
-                fontSize: '11px', 
-                color: '#666', 
-                marginTop: '4px',
-                textAlign: 'center',
-                fontFamily: 'monospace'
-              }}>
-                {videoRef.current.videoWidth}x{videoRef.current.videoHeight} | 
-                ReadyState: {videoRef.current.readyState} | 
-                Duration: {videoRef.current.duration || 'live'}
+          <div className="camera-status">
+            <div className={`status-indicator status-${videoStatus}`}>
+              <div className="status-icon">
+                {videoStatus === 'ready' && <i className="fas fa-check-circle"></i>}
+                {(videoStatus === 'requesting' || videoStatus === 'metadata-loaded') && <i className="fas fa-spinner fa-spin"></i>}
+                {videoStatus === 'error' && <i className="fas fa-exclamation-triangle"></i>}
+                {videoStatus === 'initializing' && <i className="fas fa-circle-notch fa-spin"></i>}
               </div>
-            )}
+              <span className="status-text">{getVideoStatusDisplay()}</span>
+            </div>
           </div>
           
           <div className="camera-controls">
             <button 
               onClick={capturePhoto} 
-              className="capture-button"
+              className="btn btn-capture"
               disabled={videoStatus !== 'ready' || videoRef.current?.readyState < 2}
             >
-              <i className="fas fa-camera"></i> 
+              <i className="fas fa-camera"></i>
               {videoStatus === 'ready' ? 'Ambil Foto' : 'Menunggu...'}
             </button>
-            <button onClick={stopCamera} className="cancel-button">
-              <i className="fas fa-times"></i> Batal
+            <button onClick={stopCamera} className="btn btn-cancel">
+              <i className="fas fa-times"></i>
+              Batal
             </button>
           </div>
         </div>
@@ -786,297 +553,179 @@ function ScanUpload() {
 
       {selectedImage && (
         <div className="result-container">
-          <div className="image-preview">
-            <img src={selectedImage} alt="Preview" className="preview-image" />
-          </div>
-
           {isAnalyzing && (
-            <div className="analyzing-modal">
-              <div className="analyzing-content">
-                <div className="analyzing-spinner"></div>
-                <p>Menganalisis gambar...</p>
-                <p style={{ fontSize: '14px', color: '#666' }}>
-                  Mengirim ke AI server...
-                </p>
+            <div className="loading-overlay">
+              <div className="loading-content">
+                <div className="loading-spinner"></div>
+                <h3>Menganalisis Gambar</h3>
+                <p>AI sedang mengidentifikasi ikan Anda...</p>
               </div>
             </div>
           )}
 
           {isSaving && (
-            <div className="analyzing-modal">
-              <div className="analyzing-content">
-                <div className="analyzing-spinner"></div>
-                <p>Menyimpan data...</p>
-                <p style={{ fontSize: '14px', color: '#666' }}>
-                  Mengirim ke database...
-                </p>
+            <div className="loading-overlay">
+              <div className="loading-content">
+                <div className="loading-spinner"></div>
+                <h3>Menyimpan Data</h3>
+                <p>Menyimpan hasil ke database...</p>
               </div>
             </div>
           )}
 
           {analysisResult && !isAnalyzing && (
-            <div className="analysis-result">
-              <div className="result-card">
-                <img src={selectedImage} alt={analysisResult.name} className="result-image" />
-                <div className="result-info">
-                  <h3 className="fish-name">{analysisResult.name}</h3>
-                  
-                  <div className="main-info">
-                    <p><strong>Habitat:</strong> {analysisResult.habitat}</p>
-                    <p><strong>Konsumsi:</strong> {analysisResult.konsumsi}</p>
-                    <p><strong>Confidence:</strong> {analysisResult.confidence}</p>
-                  </div>
-
-                  <div className="predictions-section">
-                    <h4>Top 3 Prediksi:</h4>
-                    <ul style={{ listStyle: 'none', padding: 0 }}>
-                      {analysisResult.top_predictions.map((pred, index) => (
-                        <li key={index} style={{ 
-                          padding: '4px 0', 
-                          borderBottom: index < 2 ? '1px solid #eee' : 'none' 
-                        }}>
-                          <span>{index + 1}. {pred.class}</span>
-                          <span style={{ float: 'right', color: '#666' }}>
-                            {pred.confidence}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-                <button onClick={resetScan} className="close-button">
-                  <i className="fas fa-times"></i>
-                </button>
+            <div className="analysis-card">
+              <button onClick={resetScan} className="card-close">
+                <i className="fas fa-times"></i>
+              </button>
+              
+              <div className="card-image">
+                <img src={selectedImage} alt={analysisResult.name} />
               </div>
               
-              <div className="action-buttons">
+              <div className="card-content">
+                <div className="fish-header">
+                  <h2 className="fish-name">{analysisResult.name}</h2>
+                  <div className="confidence-badge">
+                    <i className="fas fa-bullseye"></i>
+                    {analysisResult.confidence} akurat
+                  </div>
+                </div>
+                
+                <div className="fish-details">
+                  <div className="detail-item">
+                    <div className="detail-label">
+                      <i className="fas fa-water"></i>
+                      Habitat
+                    </div>
+                    <div className="detail-value">{analysisResult.habitat}</div>
+                  </div>
+                  
+                  <div className="detail-item">
+                    <div className="detail-label">
+                      <i className="fas fa-utensils"></i>
+                      Status Konsumsi
+                    </div>
+                    <div className={`detail-value ${analysisResult.konsumsi === 'Dapat dikonsumsi' ? 'consumable' : 'non-consumable'}`}>
+                      {analysisResult.konsumsi}
+                    </div>
+                  </div>
+                  
+                  <div className="detail-item">
+                    <div className="detail-label">
+                      <i className="fas fa-sticky-note"></i>
+                      Note
+                    </div>
+                    <button 
+                      onClick={toggleDetail}
+                      className="btn-link"
+                    >
+                      Lihat Selengkapnya
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="card-actions">
                 <button 
                   onClick={saveToDatabase} 
-                  className="save-button"
+                  className="btn btn-save"
                   disabled={isSaving}
                 >
-                  <i className="fas fa-save"></i> 
-                  {isSaving ? 'Menyimpan...' : 'Simpan'}
+                  {isSaving ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i>
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-save"></i>
+                      Simpan
+                    </>
+                  )}
                 </button>
-                
-                {renderCatalogButton()}
               </div>
             </div>
           )}
 
           {!analysisResult && !isAnalyzing && (
-            <div className="action-buttons">
-              <button onClick={resetScan} className="reset-button">
-                <i className="fas fa-redo"></i> Scan Ulang
+            <div className="retry-container">
+              <button onClick={resetScan} className="btn btn-retry">
+                <i className="fas fa-redo"></i>
+                Scan Ulang
               </button>
             </div>
           )}
         </div>
       )}
 
-      <style jsx>{`
-        .permission-info {
-          padding: 12px 16px;
-          margin: 16px 0;
-          border-radius: 8px;
-          font-size: 14px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        
-        .permission-info.checking { background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
-        .permission-info.guest { background-color: #eff6ff; color: #1e40af; border: 1px solid #3b82f6; }
-        .permission-info.warning { background-color: #fffbeb; color: #92400e; border: 1px solid #f59e0b; }
-        .permission-info.success { background-color: #f0fdf4; color: #15803d; border: 1px solid #22c55e; }
-        .permission-info.pending { background-color: #fefce8; color: #a16207; border: 1px solid #eab308; }
-        .permission-info.rejected { background-color: #fef2f2; color: #dc2626; border: 1px solid #ef4444; }
-        .permission-info.info { background-color: #f0f9ff; color: #1e40af; border: 1px solid #60a5fa; }
-        
-        .login-button, .catalog-button, .request-access-button {
-          background: linear-gradient(135deg, #3b82f6, #2563eb);
-          color: white;
-          border: none;
-          padding: 12px 20px;
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          min-width: 180px;
-          justify-content: center;
-        }
-        
-        .catalog-button.disabled { background: #9ca3af; cursor: not-allowed; }
-        .catalog-button.pending { background: linear-gradient(135deg, #f59e0b, #d97706); }
-        .catalog-button.rejected { background: linear-gradient(135deg, #ef4444, #dc2626); }
-        .request-access-button { background: linear-gradient(135deg, #10b981, #059669); }
-        
-        .login-button:hover, .catalog-button:not(.disabled):hover, .request-access-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-        
-        /* FIXED: Enhanced camera styling */
-        .camera-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 16px;
-          padding: 24px;
-          background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-          border-radius: 16px;
-          margin: 24px 0;
-          border: 2px solid #e2e8f0;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        }
-        
-        .camera-video {
-          border-radius: 12px;
-          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-          transition: all 0.3s ease;
-        }
-        
-        .camera-video:hover {
-          box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
-        }
-        
-        /* FIXED: Enhanced status indicator */
-        .video-status {
-          text-align: center;
-          margin: 12px 0;
-        }
-        
-        .status-indicator {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 16px;
-          border-radius: 25px;
-          font-size: 14px;
-          font-weight: 500;
-          transition: all 0.3s ease;
-        }
-        
-        .status-indicator.ready {
-          background: linear-gradient(135deg, #10b981, #059669);
-          color: white;
-        }
-        
-        .status-indicator.requesting,
-        .status-indicator.metadata-loaded {
-          background: linear-gradient(135deg, #3b82f6, #2563eb);
-          color: white;
-        }
-        
-        .status-indicator.error {
-          background: linear-gradient(135deg, #ef4444, #dc2626);
-          color: white;
-        }
-        
-        .status-indicator.initializing {
-          background: #f3f4f6;
-          color: #6b7280;
-          border: 1px solid #d1d5db;
-        }
-        
-        .camera-controls {
-          display: flex;
-          gap: 16px;
-          justify-content: center;
-          flex-wrap: wrap;
-          margin-top: 8px;
-        }
-        
-        .capture-button {
-          background: linear-gradient(135deg, #10b981, #059669);
-          color: white;
-          border: none;
-          padding: 16px 28px;
-          border-radius: 50px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          min-width: 160px;
-          justify-content: center;
-          box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-        }
-        
-        .capture-button:hover:not(:disabled) {
-          transform: translateY(-3px);
-          box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-        }
-        
-        .capture-button:disabled {
-          background: #9ca3af;
-          cursor: not-allowed;
-          opacity: 0.7;
-          transform: none;
-          box-shadow: none;
-        }
-        
-        .cancel-button {
-          background: linear-gradient(135deg, #ef4444, #dc2626);
-          color: white;
-          border: none;
-          padding: 16px 24px;
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        
-        .cancel-button:hover {
-          background: linear-gradient(135deg, #dc2626, #b91c1c);
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
-        }
-        
-        .save-button, .reset-button {
-          background: linear-gradient(135deg, #6b7280, #4b5563);
-          color: white;
-          border: none;
-          padding: 12px 24px;
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-right: 12px;
-        }
-        
-        .save-button:hover:not(:disabled), .reset-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-        
-        .save-button:disabled {
-          background: #9ca3af;
-          cursor: not-allowed;
-        }
-        
-        .action-buttons {
-          display: flex;
-          gap: 12px;
-          justify-content: center;
-          flex-wrap: wrap;
-          margin-top: 20px;
-        }
-      `}</style>
+      {showDetail && (
+        <div className="detail-modal" onClick={toggleDetail}>
+          <div className="detail-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="detail-modal-header">
+              <h2>Fishsnap: AI</h2>
+              <button onClick={toggleDetail} className="modal-close">
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            
+            <div className="detail-tabs">
+              <button 
+                className={`detail-tab ${activeTab === 'makanan' ? 'active' : ''}`}
+                onClick={() => setActiveTab('makanan')}
+              >
+                Makanan
+              </button>
+              <button 
+                className={`detail-tab ${activeTab === 'budidaya' ? 'active' : ''}`}
+                onClick={() => setActiveTab('budidaya')}
+              >
+                Budidaya
+              </button>
+            </div>
+            
+            <div className="detail-content-area">
+              {activeTab === 'makanan' && (
+                <div className="detail-text">
+                  <p>Ikan ini biasanya diolah menjadi masakan tumis goreng berikut ini aneka aneka olahan yang dapat kamu coba:</p>
+                  <ul>
+                    {makananItems.map((item, index) => (
+                      <li key={index} onClick={() => toggleExpand(index)} style={{cursor: 'pointer'}}>
+                        {item.name}
+                        {expandedItems[activeTab]?.[index] && (
+                          <div className="dropdown-content">
+                            <img src={item.image} alt={item.name} style={{width: '100%', marginBottom: '10px'}} />
+                            <p>{item.resep}</p>
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {activeTab === 'budidaya' && (
+                <div className="detail-text">
+                  <p>Tips budidaya ikan {analysisResult?.name || 'ini'}:</p>
+                  <ul>
+                    {budidayaItems.map((item, index) => (
+                      <li key={index} onClick={() => toggleExpand(index)} style={{cursor: 'pointer'}}>
+                        {item.name}
+                        {expandedItems[activeTab]?.[index] && (
+                          <div className="dropdown-content">
+                            <img src={item.image} alt={item.name} style={{width: '100%', marginBottom: '10px'}} />
+                            <p>{item.resep}</p>
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

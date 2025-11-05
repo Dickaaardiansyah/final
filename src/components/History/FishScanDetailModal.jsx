@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Fish, MapPin, Calendar, Target, Shield, AlertCircle, Info } from 'lucide-react';
+import { X, Fish, MapPin, Calendar, Target, Shield, AlertCircle, Info, ChefHat, Sprout } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function FishScanDetailModal({ fishScan, isOpen, onClose }) {
@@ -64,6 +64,50 @@ function FishScanDetailModal({ fishScan, isOpen, onClose }) {
   };
 
   const safetyInfo = getSafetyLevel(safetyPercentage);
+
+  // Data untuk tab detail - hanya 2 tab
+  const detailTabs = [
+    {
+      id: 'consumption',
+      label: 'Konsumsi',
+      icon: <ChefHat size={18} />,
+      content: (
+        <div className="detail-text">
+          <div className="consumption-content">
+            <h3 className="section-title">Resep Masakan</h3>
+            <p className="section-description">
+              Berikut adalah resep untuk ikan {fishScan.fishData.name}:
+            </p>
+            
+            <div className="recipe-placeholder">
+              <p>Informasi resep akan ditampilkan di sini berdasarkan hasil scan</p>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 'cultivation',
+      label: 'Budidaya',
+      icon: <Sprout size={18} />,
+      content: (
+        <div className="detail-text">
+          <div className="cultivation-content">
+            <h3 className="section-title">Panduan Budidaya</h3>
+            <p className="section-description">
+              Informasi budidaya untuk ikan {fishScan.fishData.name}:
+            </p>
+            
+            <div className="cultivation-placeholder">
+              <p>Informasi budidaya akan ditampilkan di sini berdasarkan hasil scan</p>
+            </div>
+          </div>
+        </div>
+      )
+    }
+  ];
+
+  const [activeTab, setActiveTab] = React.useState('consumption');
 
   return (
     <AnimatePresence>
@@ -152,18 +196,13 @@ function FishScanDetailModal({ fishScan, isOpen, onClose }) {
                     <div
                       className={`consumption-badge px-4 py-2 rounded-full text-sm font-semibold text-white ${
                         fishScan.fishData.konsumsi === 'Dapat dikonsumsi'
-                          ? 'bg-gradient-to-r from-blue-500 to-blue-700'
-                          : 'bg-gradient-to-r from-green-500 to-green-700'
+                          ? 'bg-gradient-to-r from-green-500 to-green-700'
+                          : 'bg-gradient-to-r from-amber-500 to-amber-700'
                       } flex items-center justify-between`}
                     >
-                      <span>{fishScan.fishData.konsumsi}</span>
-                      <button
-                        className="ml-2 bg-transparent text-white p-1 rounded-full hover:bg-gray-700/50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        onClick={onClose}
-                        aria-label="Close consumption badge"
-                      >
-                        <X size={16} />
-                      </button>
+                      <span>
+                        {fishScan.fishData.konsumsi === 'Dapat dikonsumsi' ? 'Konsumsi' : 'Hias'}
+                      </span>
                     </div>
                   </div>
 
@@ -206,19 +245,33 @@ function FishScanDetailModal({ fishScan, isOpen, onClose }) {
                     </motion.div>
                   </div>
 
-                  {/* Safety Meter Section */}
+                  {/* Safety Section - Dipindah ke atas tab */}
                   <motion.div
-                    className="safety-section bg-gray-800/30 rounded-xl p-4"
+                    className="safety-section bg-gray-800/30 rounded-xl p-4 border-l-4"
+                    style={{ borderColor: safetyInfo.color }}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6, duration: 0.3 }}
                   >
-                    <div className="section-header flex items-center gap-2 mb-4">
-                      <Shield size={20} className="text-blue-500" />
-                      <h4 className="text-lg font-semibold text-white">Tingkat Keamanan Konsumsi</h4>
+                    <div className="safety-header flex items-center gap-3 mb-4">
+                      <div className="safety-icon-container" style={{ color: safetyInfo.color }}>
+                        {safetyInfo.icon}
+                      </div>
+                      <div>
+                        <h4 className="safety-title text-lg font-semibold text-white">
+                          Tingkat Keamanan Konsumsi
+                        </h4>
+                        <p className="safety-description text-gray-400 text-sm">
+                          {safetyInfo.description}
+                        </p>
+                      </div>
+                      <div className="safety-percentage-badge ml-auto bg-gray-700/50 px-3 py-1 rounded-full">
+                        <span className="text-white font-bold">{safetyPercentage}%</span>
+                      </div>
                     </div>
+                    
                     <div className="safety-meter">
-                      <div className="safety-labels flex justify-between text-sm text-gray-400 mb-2" role="group" aria-label="Safety level range">
+                      <div className="safety-labels flex justify-between text-sm text-gray-400 mb-2">
                         <span>Tidak Aman</span>
                         <span>Aman</span>
                       </div>
@@ -229,42 +282,37 @@ function FishScanDetailModal({ fishScan, isOpen, onClose }) {
                           initial={{ width: 0 }}
                           animate={{ width: `${safetyPercentage}%` }}
                           transition={{ duration: 0.8, ease: "easeOut" }}
-                          role="progressbar"
-                          aria-valuenow={safetyPercentage}
-                          aria-valuemin="0"
-                          aria-valuemax="100"
-                          aria-label={`Safety level at ${safetyPercentage}%`}
-                        >
-                          <motion.div
-                            className="safety-indicator absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-lg"
-                            initial={{ opacity: 0, x: 10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.8, duration: 0.3 }}
-                          >
-                            <span className="safety-percentage text-xs font-bold text-gray-900">{safetyPercentage}%</span>
-                          </motion.div>
-                        </motion.div>
-                      </div>
-                      <div className="safety-level flex gap-4 mt-4 p-4 bg-gray-800/50 rounded-lg border-l-4" style={{ borderColor: safetyInfo.color }}>
-                        <div className="level-icon w-10 h-10 flex items-center justify-center rounded-full bg-gray-700/50" style={{ color: safetyInfo.color }}>
-                          {safetyInfo.icon}
-                        </div>
-                        <div className="level-info">
-                          <div className="level-title font-semibold text-lg" style={{ color: safetyInfo.color }}>
-                            {safetyInfo.level}
-                          </div>
-                          <div className="level-description text-gray-300 text-sm">{safetyInfo.description}</div>
-                        </div>
+                        />
                       </div>
                     </div>
-                    <div className="safety-guidance mt-4 p-4 bg-gray-800/30 rounded-lg border-t border-gray-700/50">
+
+                    <div className="safety-guidance mt-4 p-3 bg-gray-700/30 rounded-lg">
                       <div className="guidance-header flex items-center gap-2 mb-2 text-amber-400">
-                        <Info size={18} />
-                        <span className="font-medium">Panduan Konsumsi:</span>
+                        <Info size={16} />
+                        <span className="font-medium text-sm">Panduan Konsumsi:</span>
                       </div>
                       <p className="text-gray-200 text-sm leading-relaxed">{safetyInfo.guidance}</p>
                     </div>
                   </motion.div>
+
+                  {/* Detail Tabs - Hanya 2 tab */}
+                  <div className="detail-tabs-container">
+                    <div className="detail-tabs">
+                      {detailTabs.map(tab => (
+                        <button
+                          key={tab.id}
+                          className={`detail-tab ${activeTab === tab.id ? 'active' : ''}`}
+                          onClick={() => setActiveTab(tab.id)}
+                        >
+                          {tab.icon}
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="detail-content-area">
+                      {detailTabs.find(tab => tab.id === activeTab)?.content}
+                    </div>
+                  </div>
                 </motion.div>
               </div>
             </div>

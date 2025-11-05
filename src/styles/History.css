@@ -891,3 +891,285 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #777;
 }
+
+/* Safety Section Styles - Dipindah ke atas tab */
+.safety-section {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)) !important;
+}
+
+.safety-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.safety-icon-container {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.safety-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  color: #fff;
+}
+
+.safety-description {
+  font-size: 0.875rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.safety-percentage-badge {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Detail Tabs Styles - Hanya 2 tab */
+.detail-tabs-container {
+  margin-top: 0;
+}
+
+.detail-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 0.5rem;
+  gap: 0.5rem;
+  background: rgba(243, 244, 246, 0.1);
+  margin: 0;
+  border-radius: 16px;
+  position: relative;
+}
+
+.detail-tab {
+  padding: 1.25rem 1.5rem;
+  border: none;
+  background: transparent;
+  color: #888;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 12px;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.detail-tab::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #2563eb, #10b981);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.detail-tab.active {
+  color: #fff;
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.detail-tab.active::before {
+  opacity: 1;
+}
+
+.detail-tab:not(.active):hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.detail-content-area {
+  padding: 1.5rem 0;
+  max-height: 350px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #2563eb #2a2a2a;
+}
+
+.detail-content-area::-webkit-scrollbar {
+  width: 8px;
+}
+
+.detail-content-area::-webkit-scrollbar-track {
+  background: #2a2a2a;
+  border-radius: 10px;
+}
+
+.detail-content-area::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #2563eb, #10b981);
+  border-radius: 10px;
+}
+
+/* Content Styles untuk Tab */
+.detail-text {
+  color: #ccc;
+  line-height: 1.6;
+}
+
+.section-title {
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.section-description {
+  color: #ccc;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.consumption-content,
+.cultivation-content {
+  padding: 0.5rem;
+}
+
+.recipe-placeholder,
+.cultivation-placeholder {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 2.5rem;
+  text-align: center;
+  color: #888;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.recipe-placeholder:hover,
+.cultivation-placeholder:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+/* Safety Meter Compact Styles */
+.safety-meter {
+  margin-top: 1rem;
+}
+
+.safety-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #aaa;
+  margin-bottom: 0.5rem;
+}
+
+.safety-bar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.safety-progress {
+  height: 100%;
+  border-radius: 4px;
+  position: relative;
+  transition: width 0.8s ease;
+}
+
+.safety-guidance {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.guidance-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #ffc107;
+}
+
+.safety-guidance p {
+  margin: 0;
+  color: #ddd;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .safety-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .safety-percentage-badge {
+    align-self: flex-end;
+  }
+  
+  .detail-tabs {
+    grid-template-columns: 1fr;
+  }
+  
+  .detail-tab {
+    padding: 1rem 1.25rem;
+    font-size: 0.9rem;
+  }
+  
+  .detail-content-area {
+    max-height: 300px;
+    padding: 1rem 0;
+  }
+  
+  .recipe-placeholder,
+  .cultivation-placeholder {
+    padding: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .safety-icon-container {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .safety-title {
+    font-size: 1rem;
+  }
+  
+  .detail-tab {
+    padding: 0.875rem 1rem;
+    font-size: 0.85rem;
+  }
+  
+  .detail-tab svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .recipe-placeholder,
+  .cultivation-placeholder {
+    padding: 1.5rem;
+    font-size: 0.9rem;
+  }
+}

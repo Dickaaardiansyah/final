@@ -153,10 +153,10 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbklkIjoxLCJuY
 ### Create Recipe - Kakap Bakar Bumbu Kecap (Admin Only)
 POST http://localhost:5000/api/recipes
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbklkIjoxLCJuYW1lIjoiU3VwZXIgQWRtaW4iLCJlbWFpbCI6InN1cGVyYWRtaW5AZmlzaG1hcC5jb20iLCJyb2xlIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3NTYyNzU1NjcsImV4cCI6MTc1NjMwNDM2N30.qxAdk2nQk1Wz_Z0JGhe8RXPBZWHkR_D9eOkL_cu4Ulk
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbklkIjoxLCJuYW1lIjoiU3VwZXIgQWRtaW4iLCJlbWFpbCI6InN1cGVyYWRtaW5AZmlzaG1hcC5jb20iLCJyb2xlIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3NjE1NTA5MzksImV4cCI6MTc2MTU3OTczOX0.bTW_5mZ7fd_8w8UuDtde7kyjGSqnde11vIJd40oyacU
 
 {
-  "fish_name": "Kakap",
+  "fish_name": "Ikan Kakap",
   "title": "Kakap Bakar Bumbu Kecap Pedas",
   "image_url": "https://example.com/kakap-bakar.jpg",
   "ingredients": "- 1 ekor kakap merah segar (500-700gr)\n- 5 sdm kecap manis\n- 3 sdm kecap asin\n- 10 cabai rawit merah\n- 8 siung bawang putih\n- 5 butir bawang merah\n- 2 sdm air jeruk nipis\n- 1 sdt garam\n- 2 batang serai, memarkan\n- Daun pisang untuk membungkus",

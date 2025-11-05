@@ -1009,7 +1009,7 @@ function Galery() {
                     style={{
                       padding: '0.75rem 1.5rem',
                       border: 'none',
-                      backgroundColor: submitting ? '#94a3b8' : '#0891b2',
+                      backgroundColor: submitting ? ' #94a3b8' : '#0891b2',
                       color: '#ffffff',
                       borderRadius: '8px',
                       cursor: submitting ? 'not-allowed' : 'pointer',

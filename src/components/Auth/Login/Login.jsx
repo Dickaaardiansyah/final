@@ -13,7 +13,9 @@ function Login() {
   const [isValid, setIsValid] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // State untuk show/hide password
+  const [showPassword, setShowPassword] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [userName, setUserName] = useState('');
 
   useEffect(() => {
     const { email, password, terms } = form;
@@ -68,23 +70,25 @@ function Login() {
     });
 
     if (result.success) {
-      // Login berhasil
-      alert(`Login berhasil! Selamat datang ${result.user?.name || form.email}`);
+      // Login berhasil - tampilkan toast
+      setUserName(result.user?.name || form.email);
+      setShowSuccessToast(true);
       
       // Trigger custom event untuk update navbar
       window.dispatchEvent(new CustomEvent('userLoggedIn', { 
         detail: { user: result.user } 
       }));
       
-      // Redirect ke home
-      navigate('/');
+      // Redirect ke home setelah 2.5 detik
+      setTimeout(() => {
+        navigate('/');
+      }, 2500);
       
     } else {
       // Login gagal
       setError(result.message);
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handleRegisterClick = (e) => {
@@ -94,6 +98,35 @@ function Login() {
 
   return (
     <div className="container">
+      {/* Success Toast Notification */}
+      {showSuccessToast && (
+        <div className="toast-notification">
+          <div className="toast-icon-wrapper">
+            <div className="toast-icon">
+              <i className="fas fa-check"></i>
+            </div>
+          </div>
+          
+          <div className="toast-content">
+            <h4 className="toast-title">Login Berhasil!</h4>
+            <p className="toast-message">
+              Selamat datang, <strong>{userName}</strong>
+            </p>
+          </div>
+          
+          <button 
+            className="toast-close"
+            onClick={() => setShowSuccessToast(false)}
+            aria-label="Close notification"
+          >
+            <i className="fas fa-times"></i>
+          </button>
+          
+          {/* Progress Bar */}
+          <div className="toast-progress"></div>
+        </div>
+      )}
+
       <h1 className="title">Login</h1>
 
       <form className="form-container" onSubmit={handleSubmit}>

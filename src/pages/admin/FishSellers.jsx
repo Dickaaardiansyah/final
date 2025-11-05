@@ -1,5 +1,5 @@
-// FishSellers.jsx
-import React, { useState } from "react";
+// FishSellers.jsx - Professional Card Design dengan Gambar Ikan
+import React, { useState, useEffect } from "react";
 import styles from "../../styles/admin/Dashboard.module.css";
 import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
@@ -8,7 +8,11 @@ import Swal from 'sweetalert2';
 
 function FishSellers() {
   const [showModal, setShowModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [selectedFish, setSelectedFish] = useState(null);
+  const [editingRecipe, setEditingRecipe] = useState(null);
+  const [recipes, setRecipes] = useState([]);
+  const [filteredRecipes, setFilteredRecipes] = useState([]);
   const [recipeData, setRecipeData] = useState({
     judul: "",
     gambar: "",
@@ -20,25 +24,65 @@ function FishSellers() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Hardcoded fish list as per user request
   const fishes = [
-    { id: 1, nama: "Ikan Bandeng", icon: "🐟" },
-    { id: 2, nama: "Ikan Cupang", icon: "🐠" },
-    { id: 3, nama: "Ikan Gabus", icon: "🐡" },
-    { id: 4, nama: "Ikan Gurami", icon: "🐟" },
-    { id: 5, nama: "Ikan Kakap", icon: "🐠" },
-    { id: 6, nama: "Ikan Kerapu", icon: "🐡" },
-    { id: 7, nama: "Ikan Mujair", icon: "🐟" },
-    { id: 8, nama: "Ikan Nila", icon: "🐠" },
-    { id: 9, nama: "Ikan Tenggiri", icon: "🐡" },
-    { id: 10, nama: "Ikan Tongkol", icon: "🐟" },
+    { 
+      id: 1, 
+      nama: "Ikan Bandeng", 
+      image: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300&h=200&fit=crop"
+    },
+    { 
+      id: 2, 
+      nama: "Ikan Cupang", 
+      image: "https://images.unsplash.com/photo-1520990692939-e6f1d4b6471a?w=300&h=200&fit=crop"
+    },
+    { 
+      id: 3, 
+      nama: "Ikan Gabus", 
+      image: "https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=300&h=200&fit=crop"
+    },
+    { 
+      id: 4, 
+      nama: "Ikan Gurami", 
+      image: "https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?w=300&h=200&fit=crop"
+    },
+    { 
+      id: 5, 
+      nama: "Ikan Kakap", 
+      image: "https://images.unsplash.com/photo-1544552866-d3ed42536cfd?w=300&h=200&fit=crop"
+    },
+    { 
+      id: 6, 
+      nama: "Ikan Kerapu", 
+      image: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300&h=200&fit=crop"
+    },
+    { 
+      id: 7, 
+      nama: "Ikan Mujair", 
+      image: "https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=300&h=200&fit=crop"
+    },
+    { 
+      id: 8, 
+      nama: "Ikan Nila", 
+      image: "https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=300&h=200&fit=crop"
+    },
+    { 
+      id: 9, 
+      nama: "Ikan Tenggiri", 
+      image: "https://images.unsplash.com/photo-1544552866-d3ed42536cfd?w=300&h=200&fit=crop"
+    },
+    { 
+      id: 10, 
+      nama: "Ikan Tongkol", 
+      image: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300&h=200&fit=crop"
+    },
   ];
 
-  // API Base URL
   const API_BASE_URL = 'http://localhost:5000/api';
 
-  // SweetAlert Toast Configuration
   const Toast = Swal.mixin({
     toast: true,
     position: 'top-end',
@@ -51,17 +95,14 @@ function FishSellers() {
     }
   });
 
-  // Get admin token
   const getAdminToken = async () => {
     let token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-    if (token) {
-      return token;
-    }
+    if (token) return token;
     try {
       const response = await axios.get(`${API_BASE_URL.replace('/api', '')}/admin/token`, {
         withCredentials: true
       });
-      if (response.data && response.data.accessToken) {
+      if (response.data?.accessToken) {
         const newToken = response.data.accessToken;
         localStorage.setItem('adminToken', newToken);
         return newToken;
@@ -72,25 +113,44 @@ function FishSellers() {
     return null;
   };
 
-  // API Headers with token
   const getAuthHeaders = async () => {
     const token = await getAdminToken();
-    if (!token) {
-      throw new Error('Token admin tidak ditemukan. Silakan login kembali.');
-    }
+    if (!token) throw new Error('Token admin tidak ditemukan. Silakan login kembali.');
     return {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     };
   };
 
-  // Compress image to base64
+  const fetchRecipes = async (page = 1) => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/recipes?page=${page}&limit=100`);
+      if (response.data?.data) {
+        setRecipes(response.data.data);
+        setFilteredRecipes(response.data.data);
+        setTotalPages(response.data.pagination?.total_pages || 1);
+      }
+    } catch (error) {
+      console.error('Error fetching recipes:', error);
+      Toast.fire({
+        icon: 'error',
+        title: 'Gagal memuat resep'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRecipes(currentPage);
+  }, [currentPage]);
+
   const compressImage = (file, maxWidth = 800, quality = 0.7) => {
     return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
-
       img.onload = () => {
         let { width, height } = img;
         if (width > height) {
@@ -107,19 +167,16 @@ function FishSellers() {
         canvas.width = width;
         canvas.height = height;
         ctx.drawImage(img, 0, 0, width, height);
-        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
-        resolve(compressedBase64);
+        resolve(canvas.toDataURL('image/jpeg', quality));
       };
       img.onerror = reject;
       img.src = URL.createObjectURL(file);
     });
   };
 
-  // Handle file upload
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validasi file type
       if (!file.type.startsWith('image/')) {
         await Swal.fire({
           icon: 'warning',
@@ -129,8 +186,6 @@ function FishSellers() {
         });
         return;
       }
-
-      // Validasi ukuran file (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         await Swal.fire({
           icon: 'warning',
@@ -140,7 +195,6 @@ function FishSellers() {
         });
         return;
       }
-
       try {
         setPreviewImage('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjEwMCIgeT0iNzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY0NzQ4YiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+TWVtcHJvc2VzLi4uPC90ZXh0Pgo8L3N2Zz4=');
         const compressedBase64 = await compressImage(file);
@@ -149,7 +203,7 @@ function FishSellers() {
           await Swal.fire({
             icon: 'error',
             title: 'Gambar Terlalu Besar',
-            text: 'Gambar terlalu besar setelah dikompresi. Coba gunakan gambar yang lebih kecil.',
+            text: 'Gambar terlalu besar setelah dikompresi.',
             confirmButtonColor: '#dc2626'
           });
           setPreviewImage('');
@@ -157,18 +211,9 @@ function FishSellers() {
         }
         setPreviewImage(compressedBase64);
         setRecipeData(prev => ({ ...prev, gambar: compressedBase64 }));
-        Toast.fire({
-          icon: 'success',
-          title: 'Gambar berhasil diunggah'
-        });
+        Toast.fire({ icon: 'success', title: 'Gambar berhasil diunggah' });
       } catch (error) {
         console.error('Error processing image:', error);
-        await Swal.fire({
-          icon: 'error',
-          title: 'Gagal Memproses Gambar',
-          text: 'Gagal memproses gambar. Coba gunakan gambar lain.',
-          confirmButtonColor: '#dc2626'
-        });
         setPreviewImage('');
       }
     }
@@ -176,6 +221,7 @@ function FishSellers() {
 
   const handleOpenModal = (fish) => {
     setSelectedFish(fish);
+    setEditingRecipe(null);
     setShowModal(true);
     setError(null);
     setSuccess(null);
@@ -183,8 +229,62 @@ function FishSellers() {
     setRecipeData({ judul: "", gambar: "", bahan: "", cara: "" });
   };
 
+  const handleOpenViewModal = (fish) => {
+    setSelectedFish(fish);
+    const filtered = recipes.filter(r => r.fish_name.toLowerCase().includes(fish.nama.toLowerCase()));
+    setFilteredRecipes(filtered);
+    setShowViewModal(true);
+  };
+
+  const handleEditRecipe = (recipe) => {
+    setEditingRecipe(recipe);
+    setSelectedFish(fishes.find(f => f.nama === recipe.fish_name) || { nama: recipe.fish_name, image: "https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=300&h=200&fit=crop" });
+    setRecipeData({
+      judul: recipe.title,
+      gambar: recipe.image_url || "",
+      bahan: recipe.ingredients,
+      cara: recipe.instructions
+    });
+    setPreviewImage(recipe.image_url || "");
+    setShowViewModal(false);
+    setShowModal(true);
+  };
+
+  const handleDeleteRecipe = async (recipeId) => {
+    const result = await Swal.fire({
+      title: 'Hapus Resep?',
+      text: "Resep yang dihapus tidak dapat dikembalikan!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const headers = await getAuthHeaders();
+        await axios.delete(`${API_BASE_URL}/recipes/${recipeId}`, { headers });
+        Toast.fire({ icon: 'success', title: 'Resep berhasil dihapus' });
+        fetchRecipes(currentPage);
+        const filtered = recipes.filter(r => r.id !== recipeId);
+        setFilteredRecipes(filtered);
+      } catch (error) {
+        console.error('Error deleting recipe:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Menghapus',
+          text: error.response?.data?.msg || 'Terjadi kesalahan',
+          confirmButtonColor: '#dc2626'
+        });
+      }
+    }
+  };
+
   const handleCloseModal = () => {
     setShowModal(false);
+    setEditingRecipe(null);
     setRecipeData({ judul: "", gambar: "", bahan: "", cara: "" });
     setPreviewImage('');
     setError(null);
@@ -202,7 +302,6 @@ function FishSellers() {
     setError(null);
     setSuccess(null);
 
-    // Validasi input
     if (!recipeData.judul || recipeData.judul.trim().length < 3) {
       setError('Judul resep harus minimal 3 karakter.');
       setSubmitting(false);
@@ -236,7 +335,7 @@ function FishSellers() {
       });
       return;
     }
-    if (!recipeData.gambar) {
+    if (!recipeData.gambar && !editingRecipe) {
       setError('Gambar harus diunggah.');
       setSubmitting(false);
       await Swal.fire({
@@ -257,36 +356,35 @@ function FishSellers() {
         instructions: recipeData.cara,
       };
       const headers = await getAuthHeaders();
-      const response = await axios.post(`${API_BASE_URL}/recipes`, payload, { headers });
 
-      setSuccess('Resep berhasil ditambahkan!');
-      Toast.fire({
-        icon: 'success',
-        title: 'Resep berhasil ditambahkan'
-      });
-      handleCloseModal();
-    } catch (err) {
-      console.error('Error saat menambahkan resep:', err);
-      setError(err.response?.data?.msg || err.message || 'Gagal menambahkan resep.');
-      if (err.message.includes('Token')) {
-        await Swal.fire({
-          icon: 'error',
-          title: 'Autentikasi Gagal',
-          text: 'Token admin tidak ditemukan. Silakan login kembali.',
-          confirmButtonColor: '#dc2626'
-        });
+      if (editingRecipe) {
+        await axios.put(`${API_BASE_URL}/recipes/${editingRecipe.id}`, payload, { headers });
+        Toast.fire({ icon: 'success', title: 'Resep berhasil diperbarui' });
       } else {
-        await Swal.fire({
-          icon: 'error',
-          title: 'Gagal Menyimpan',
-          text: 'Gagal menambahkan resep: ' + (err.response?.data?.msg || err.message),
-          confirmButtonColor: '#dc2626'
-        });
+        await axios.post(`${API_BASE_URL}/recipes`, payload, { headers });
+        Toast.fire({ icon: 'success', title: 'Resep berhasil ditambahkan' });
       }
+
+      handleCloseModal();
+      fetchRecipes(currentPage);
+    } catch (err) {
+      console.error('Error saving recipe:', err);
+      setError(err.response?.data?.msg || err.message || 'Gagal menyimpan resep.');
+      await Swal.fire({
+        icon: 'error',
+        title: 'Gagal Menyimpan',
+        text: err.response?.data?.msg || err.message,
+        confirmButtonColor: '#dc2626'
+      });
     } finally {
       setSubmitting(false);
     }
   };
+
+  // Filter fishes by search
+  const filteredFishes = fishes.filter(fish =>
+    fish.nama.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="containerAdmin">
@@ -303,89 +401,253 @@ function FishSellers() {
             </h2>
           </div>
 
-          <div style={tableStyles.wrapper}>
-            <table style={tableStyles.table}>
-              <thead style={tableStyles.thead}>
-                <tr>
-                  <th style={tableStyles.th}>
-                    <div style={tableStyles.thContent}>
-                      <svg style={tableStyles.thIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                      </svg>
-                      No
-                    </div>
-                  </th>
-                  <th style={tableStyles.th}>
-                    <div style={tableStyles.thContent}>
-                      <svg style={tableStyles.thIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                      </svg>
-                      Nama Ikan
-                    </div>
-                  </th>
-                  <th style={{ ...tableStyles.th, textAlign: 'center' }}>
-                    <div style={{ ...tableStyles.thContent, justifyContent: 'center' }}>
-                      <svg style={tableStyles.thIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                      Aksi
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody style={tableStyles.tbody}>
-                {fishes.map((fish, index) => (
-                  <tr key={fish.id} style={tableStyles.tr}>
-                    <td style={tableStyles.td}>
-                      <div style={tableStyles.numberBadge}>{index + 1}</div>
-                    </td>
-                    <td style={tableStyles.td}>
-                      <div style={tableStyles.fishNameWrapper}>
-                        <div style={tableStyles.fishIconBadge}>
-                          <span style={tableStyles.fishIconEmoji}>{fish.icon}</span>
-                        </div>
-                        <span style={tableStyles.fishName}>{fish.nama}</span>
-                      </div>
-                    </td>
-                    <td style={{ ...tableStyles.td, textAlign: 'center' }}>
-                      <button
-                        onClick={() => handleOpenModal(fish)}
-                        style={tableStyles.addBtn}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-2px)';
-                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 145, 178, 0.35)';
-                          e.currentTarget.style.background = 'linear-gradient(135deg, #0e7490 0%, #155e75 100%)';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 145, 178, 0.25)';
-                          e.currentTarget.style.background = 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)';
-                        }}
-                      >
-                        <svg style={tableStyles.btnIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        Tambah Resep
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* Search Bar */}
+          <div style={{ marginBottom: '2rem' }}>
+            <input
+              type="text"
+              placeholder="🔍 Cari jenis ikan..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                width: '100%',
+                maxWidth: '400px',
+                padding: '0.875rem 1.25rem',
+                border: '2px solid #e5e7eb',
+                borderRadius: '12px',
+                fontSize: '0.9375rem',
+                outline: 'none',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#0891b2';
+                e.target.style.boxShadow = '0 0 0 3px rgba(8, 145, 178, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#e5e7eb';
+                e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05)';
+              }}
+            />
           </div>
+
+          {/* Fish Cards Grid */}
+          <div style={cardGridStyles.container}>
+            {filteredFishes.map((fish) => (
+              <div key={fish.id} style={cardGridStyles.card}>
+                <div style={cardGridStyles.imageWrapper}>
+                  <img 
+                    src={fish.image} 
+                    alt={fish.nama}
+                    style={cardGridStyles.image}
+                    onError={(e) => {
+                      e.target.src = 'https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=300&h=200&fit=crop';
+                    }}
+                  />
+                  <div style={cardGridStyles.overlay}></div>
+                </div>
+                <div style={cardGridStyles.content}>
+                  <h3 style={cardGridStyles.title}>{fish.nama}</h3>
+                  <div style={cardGridStyles.stats}>
+                    <div style={cardGridStyles.statItem}>
+                      <svg style={cardGridStyles.statIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span>{recipes.filter(r => r.fish_name.toLowerCase().includes(fish.nama.toLowerCase())).length} Resep</span>
+                    </div>
+                  </div>
+                  <div style={cardGridStyles.actions}>
+                    <button
+                      onClick={() => handleOpenModal(fish)}
+                      style={cardGridStyles.btnAdd}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 6px 20px rgba(8, 145, 178, 0.4)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 145, 178, 0.3)';
+                      }}
+                    >
+                      <svg style={cardGridStyles.btnIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Tambah
+                    </button>
+                    <button
+                      onClick={() => handleOpenViewModal(fish)}
+                      style={cardGridStyles.btnView}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 6px 20px rgba(249, 115, 22, 0.4)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(249, 115, 22, 0.3)';
+                      }}
+                    >
+                      <svg style={cardGridStyles.btnIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      Lihat
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {filteredFishes.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+              <svg style={{ width: '4rem', height: '4rem', margin: '0 auto 1rem', opacity: 0.5 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <p style={{ fontSize: '1.125rem', fontWeight: 500 }}>Tidak ada ikan yang sesuai dengan pencarian "{searchTerm}"</p>
+            </div>
+          )}
         </div>
 
-        {/* Modal Tambah Resep */}
+        {/* Modal View All Recipes */}
+        {showViewModal && (
+          <div style={modalStyles.overlay}>
+            <div style={{ ...modalStyles.container, maxWidth: '70rem' }}>
+              <div style={modalStyles.header}>
+                <div style={modalStyles.headerContent}>
+                  <div style={modalStyles.fishIconWrapper}>
+                    <img src={selectedFish.image} alt={selectedFish.nama} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                  </div>
+                  <div>
+                    <h3 style={modalStyles.title}>Semua Resep {selectedFish.nama}</h3>
+                    <p style={modalStyles.subtitle}>Total: {filteredRecipes.length} resep</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowViewModal(false)}
+                  style={modalStyles.closeButton}
+                  type="button"
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+                    e.currentTarget.style.transform = 'rotate(90deg)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                    e.currentTarget.style.transform = 'rotate(0deg)';
+                  }}
+                >
+                  <svg style={modalStyles.closeIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div style={{ padding: '1.5rem', maxHeight: '70vh', overflowY: 'auto' }}>
+                {loading ? (
+                  <div style={{ textAlign: 'center', padding: '2rem' }}>
+                    <div style={{ display: 'inline-block', width: '3rem', height: '3rem', border: '4px solid #e5e7eb', borderTopColor: '#0891b2', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                    <p style={{ marginTop: '1rem', color: '#64748b' }}>Memuat resep...</p>
+                  </div>
+                ) : filteredRecipes.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '3rem' }}>
+                    <svg style={{ width: '5rem', height: '5rem', color: '#d1d5db', margin: '0 auto' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p style={{ marginTop: '1rem', color: '#64748b', fontSize: '1.125rem' }}>Belum ada resep untuk {selectedFish.nama}</p>
+                    <button
+                      onClick={() => {
+                        setShowViewModal(false);
+                        handleOpenModal(selectedFish);
+                      }}
+                      style={{
+                        marginTop: '1rem',
+                        padding: '0.75rem 1.5rem',
+                        background: 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Tambah Resep Pertama
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                    {filteredRecipes.map((recipe) => (
+                      <div key={recipe.id} style={recipeCardStyles.card}>
+                        <div style={recipeCardStyles.imageWrapper}>
+                          {recipe.image_url ? (
+                            <img src={recipe.image_url} alt={recipe.title} style={recipeCardStyles.image} />
+                          ) : (
+                            <div style={recipeCardStyles.noImage}>
+                              <svg style={{ width: '3rem', height: '3rem', color: '#9ca3af' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        <div style={recipeCardStyles.content}>
+                          <h4 style={recipeCardStyles.title}>{recipe.title}</h4>
+                          <div style={recipeCardStyles.info}>
+                            <span style={recipeCardStyles.fishTag}>{recipe.fish_name}</span>
+                          </div>
+                          <div style={recipeCardStyles.actions}>
+                            <button
+                              onClick={() => handleEditRecipe(recipe)}
+                              style={recipeCardStyles.editBtn}
+                              onMouseOver={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 145, 178, 0.3)';
+                              }}
+                              onMouseOut={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = 'none';
+                              }}
+                            >
+                              <svg style={{ width: '1rem', height: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteRecipe(recipe.id)}
+                              style={recipeCardStyles.deleteBtn}
+                              onMouseOver={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.3)';
+                              }}
+                              onMouseOut={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = 'none';
+                              }}
+                            >
+                              <svg style={{ width: '1rem', height: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              Hapus
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Add/Edit Recipe */}
         {showModal && (
           <div style={modalStyles.overlay}>
             <div style={modalStyles.container}>
               <div style={modalStyles.header}>
                 <div style={modalStyles.headerContent}>
                   <div style={modalStyles.fishIconWrapper}>
-                    <span style={modalStyles.fishIcon}>{selectedFish.icon}</span>
+                    <img src={selectedFish.image} alt={selectedFish.nama} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                   </div>
                   <div>
-                    <h3 style={modalStyles.title}>Tambah Resep Baru</h3>
+                    <h3 style={modalStyles.title}>{editingRecipe ? 'Edit Resep' : 'Tambah Resep Baru'}</h3>
                     <p style={modalStyles.subtitle}>{selectedFish.nama}</p>
                   </div>
                 </div>
@@ -409,7 +671,6 @@ function FishSellers() {
               </div>
 
               <form onSubmit={handleSubmit} style={modalStyles.form}>
-                {/* Judul Resep */}
                 <div style={modalStyles.formGroup}>
                   <label style={modalStyles.label}>
                     <svg style={modalStyles.labelIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -450,13 +711,12 @@ function FishSellers() {
                   )}
                 </div>
 
-                {/* Gambar */}
                 <div style={modalStyles.formGroup}>
                   <label style={modalStyles.label}>
                     <svg style={modalStyles.labelIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    Gambar *
+                    Gambar {editingRecipe ? '(opsional)' : '*'}
                   </label>
                   <input
                     type="file"
@@ -530,7 +790,6 @@ function FishSellers() {
                   )}
                 </div>
 
-                {/* Bahan-bahan */}
                 <div style={modalStyles.formGroup}>
                   <label style={modalStyles.label}>
                     <svg style={modalStyles.labelIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -571,7 +830,6 @@ function FishSellers() {
                   )}
                 </div>
 
-                {/* Cara Memasak */}
                 <div style={modalStyles.formGroup}>
                   <label style={modalStyles.label}>
                     <svg style={modalStyles.labelIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -659,7 +917,7 @@ function FishSellers() {
                     <svg style={modalStyles.btnIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    {submitting ? 'Menyimpan...' : 'Simpan Resep'}
+                    {submitting ? 'Menyimpan...' : editingRecipe ? 'Update Resep' : 'Simpan Resep'}
                   </button>
                 </div>
               </form>
@@ -681,110 +939,201 @@ function FishSellers() {
   );
 }
 
-// Table Styles
-const tableStyles = {
-  wrapper: {
-    marginTop: '1.5rem',
-    borderRadius: '16px',
+// Card Grid Styles
+const cardGridStyles = {
+  container: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+    gap: '1.5rem',
+    marginTop: '1.5rem'
+  },
+  card: {
+    background: 'white',
+    borderRadius: '20px',
     overflow: 'hidden',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
-    border: '1px solid #e5e7eb'
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+    transition: 'all 0.3s ease',
+    border: '1px solid #e5e7eb',
+    cursor: 'pointer'
   },
-  table: {
+  imageWrapper: {
+    position: 'relative',
     width: '100%',
-    borderCollapse: 'collapse',
-    background: 'white'
+    height: '180px',
+    overflow: 'hidden'
   },
-  thead: {
-    background: 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)'
+  image: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    transition: 'transform 0.3s ease'
   },
-  th: {
-    padding: '1.25rem 1.5rem',
-    textAlign: 'left',
-    border: 'none'
+  overlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+    background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',
+    pointerEvents: 'none'
   },
-  thContent: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    color: 'white',
-    fontWeight: 600,
-    fontSize: '0.9375rem',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px'
+  content: {
+    padding: '1.25rem'
   },
-  thIcon: {
-    width: '1.25rem',
-    height: '1.25rem',
-    opacity: 0.9
-  },
-  tbody: {
-    background: 'white'
-  },
-  tr: {
-    borderBottom: '1px solid #f3f4f6',
-    transition: 'all 0.2s ease'
-  },
-  td: {
-    padding: '1.25rem 1.5rem',
-    border: 'none'
-  },
-  numberBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '2.5rem',
-    height: '2.5rem',
-    background: 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)',
-    color: 'white',
-    borderRadius: '12px',
+  title: {
+    fontSize: '1.25rem',
     fontWeight: 700,
-    fontSize: '1rem',
-    boxShadow: '0 2px 8px rgba(8, 145, 178, 0.2)'
+    color: '#1e293b',
+    marginBottom: '0.75rem',
+    lineHeight: 1.3
   },
-  fishNameWrapper: {
+  stats: {
+    marginBottom: '1rem'
+  },
+  statItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '1rem'
+    gap: '0.5rem',
+    color: '#64748b',
+    fontSize: '0.875rem',
+    fontWeight: 500
   },
-  fishIconBadge: {
+  statIcon: {
+    width: '1.125rem',
+    height: '1.125rem',
+    color: '#0891b2'
+  },
+  actions: {
+    display: 'flex',
+    gap: '0.5rem'
+  },
+  btnAdd: {
+    flex: 1,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '3.5rem',
-    height: '3.5rem',
-    background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-    borderRadius: '16px',
-    border: '2px solid #bae6fd',
-    boxShadow: '0 2px 8px rgba(8, 145, 178, 0.1)'
-  },
-  fishIconEmoji: {
-    fontSize: '2rem',
-    lineHeight: 1
-  },
-  fishName: {
-    color: '#1e293b',
-    fontWeight: 600,
-    fontSize: '1.0625rem'
-  },
-  addBtn: {
-    display: 'inline-flex',
-    alignItems: 'center',
     gap: '0.5rem',
-    padding: '0.75rem 1.5rem',
+    padding: '0.75rem',
     background: 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)',
     color: 'white',
     border: 'none',
     borderRadius: '12px',
     fontWeight: 600,
-    fontSize: '0.9375rem',
+    fontSize: '0.875rem',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
-    boxShadow: '0 4px 12px rgba(8, 145, 178, 0.25)'
+    boxShadow: '0 4px 12px rgba(8, 145, 178, 0.3)'
+  },
+  btnView: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
+    padding: '0.75rem',
+    background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '12px',
+    fontWeight: 600,
+    fontSize: '0.875rem',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)'
   },
   btnIcon: {
     width: '1.125rem',
     height: '1.125rem'
+  }
+};
+
+// Recipe Card Styles
+const recipeCardStyles = {
+  card: {
+    background: 'white',
+    borderRadius: '16px',
+    overflow: 'hidden',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+    transition: 'all 0.3s ease',
+    border: '1px solid #e5e7eb'
+  },
+  imageWrapper: {
+    width: '100%',
+    height: '200px',
+    overflow: 'hidden',
+    background: '#f3f4f6'
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover'
+  },
+  noImage: {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)'
+  },
+  content: {
+    padding: '1.25rem'
+  },
+  title: {
+    fontSize: '1.125rem',
+    fontWeight: 700,
+    color: '#1e293b',
+    marginBottom: '0.75rem',
+    lineHeight: 1.3
+  },
+  info: {
+    marginBottom: '1rem'
+  },
+  fishTag: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '0.375rem 0.875rem',
+    background: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
+    color: '#0e7490',
+    borderRadius: '8px',
+    fontSize: '0.875rem',
+    fontWeight: 600
+  },
+  actions: {
+    display: 'flex',
+    gap: '0.5rem'
+  },
+  editBtn: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
+    padding: '0.75rem',
+    background: 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '10px',
+    fontWeight: 600,
+    fontSize: '0.875rem',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease'
+  },
+  deleteBtn: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
+    padding: '0.75rem',
+    background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '10px',
+    fontWeight: 600,
+    fontSize: '0.875rem',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease'
   }
 };
 
@@ -826,14 +1175,13 @@ const modalStyles = {
     background: 'rgba(255, 255, 255, 0.2)',
     backdropFilter: 'blur(10px)',
     borderRadius: '50%',
-    padding: '0.75rem',
+    width: '4rem',
+    height: '4rem',
+    padding: '0.25rem',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center'
-  },
-  fishIcon: {
-    fontSize: '2rem',
-    lineHeight: 1
+    justifyContent: 'center',
+    overflow: 'hidden'
   },
   title: {
     fontSize: '1.5rem',

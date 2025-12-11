@@ -1,3 +1,4 @@
+// controllers/Admin.js - Versi tanpa Katalog/Contributor
 import Admin from '../models/adminModel.js';
 import bcrypt from 'bcrypt';
 import { Op } from 'sequelize';
@@ -45,7 +46,7 @@ export const createAdmin = async (req, res) => {
         email,
         gender,
         password,
-        role = 'catalog_moderator' // Default role
+        role = 'admin' // Default role, ubah ke 'admin' karena catalog_moderator dihapus
     } = req.body;
 
     // Validasi input dasar
@@ -55,8 +56,8 @@ export const createAdmin = async (req, res) => {
         });
     }
 
-    // Validasi role
-    const allowedRoles = ['super_admin', 'seller_verifier', 'admin'];
+    // Validasi role (hapus 'catalog_moderator')
+    const allowedRoles = ['super_admin', 'admin'];
     if (!allowedRoles.includes(role)) {
         return res.status(400).json({
             msg: "Role tidak valid. Role yang diizinkan: " + allowedRoles.join(', ')
@@ -129,7 +130,7 @@ export const createAdmin = async (req, res) => {
     }
 };
 
-// ⭐ TAMBAHAN: Function baru untuk admin dashboard stats
+// ⭐ TAMBAHAN: Function baru untuk admin dashboard stats (disesuaikan tanpa katalog)
 export const getAdminDashboardStats = async (req, res) => {
     try {
         const adminId = req.adminId;
@@ -144,36 +145,24 @@ export const getAdminDashboardStats = async (req, res) => {
         const Users = (await import('../models/userModel.js')).default;
         const FishPredictions = (await import('../models/fishPredictionModel.js')).default;
 
-        // Get statistics
+        // Get statistics (hapus contributor dan catalog-related)
         const stats = await Promise.all([
             // Total users
             Users.count(),
             
-            // Users by role
+            // Users by role (hanya user dan admin)
             Users.count({ where: { role: 'user' } }),
-            Users.count({ where: { role: 'contributor' } }),
-            
-            // Pending catalog requests
-            Users.count({ where: { catalog_request_status: 'pending' } }),
+            Users.count({ where: { role: 'admin' } }),
             
             // Total predictions
-            FishPredictions.count(),
-            
-            // Catalog entries (predictions saved to catalog)
-            FishPredictions.count({ 
-                where: { 
-                    namaIkan: { [Op.ne]: null } 
-                } 
-            })
+            FishPredictions.count()
         ]);
 
         const [
             totalUsers,
             regularUsers, 
-            contributors,
-            pendingRequests,
-            totalPredictions,
-            catalogEntries
+            adminUsers,
+            totalPredictions
         ] = stats;
 
         res.status(200).json({
@@ -182,12 +171,10 @@ export const getAdminDashboardStats = async (req, res) => {
                 users: {
                     total: totalUsers,
                     regular: regularUsers,
-                    contributors: contributors,
-                    pending_requests: pendingRequests
+                    admins: adminUsers
                 },
                 predictions: {
-                    total: totalPredictions,
-                    in_catalog: catalogEntries
+                    total: totalPredictions
                 },
                 admin_info: {
                     name: admin.name,
@@ -203,58 +190,20 @@ export const getAdminDashboardStats = async (req, res) => {
     }
 };
 
-// ⭐ TAMBAHAN: Function untuk get admin permissions
-export const getAdminPermissions = async (req, res) => {
+// ⭐ ADMIN LOGIN (tetap, tanpa perubahan besar)
+export const loginAdmin = async (req, res) => {
     try {
-        const adminId = req.adminId;
-        
-        const admin = await Admin.findByPk(adminId);
-        if (!admin) {
-            return res.status(404).json({ msg: "Admin tidak ditemukan" });
+        const { email, password } = req.body;
+
+        // Validasi input
+        if (!email || !password) {
+            return res.status(400).json({ msg: "Email dan password harus diisi" });
         }
 
-        const permissions = {
-            can_approve_catalog_requests: admin.canApproveCatalogRequests(),
-            can_manage_users: admin.canManageUsers(),
-            can_manage_admins: admin.canManageAdmins(),
-            can_moderate_content: admin.canModerateContent(),
-            role: admin.role,
-            status: admin.status
-        };
-
-        res.status(200).json({
-            msg: "Admin permissions berhasil diambil",
-            data: permissions
-        });
-
-    } catch (error) {
-        console.error('Error fetching admin permissions:', error);
-        res.status(500).json({ msg: "Server error" });
-    }
-};
-
-// ⭐ LOGIN ADMIN (sederhana tanpa OTP verification)
-export const loginAdmin = async (req, res) => {
-    const { email, password } = req.body;
-
-    // Validasi input
-    if (!email || !password) {
-        return res.status(400).json({ msg: "Email dan password harus diisi" });
-    }
-
-    try {
         // Cari admin berdasarkan email
         const admin = await Admin.findOne({ where: { email } });
-
         if (!admin) {
-            return res.status(404).json({ msg: "Email admin tidak ditemukan" });
-        }
-
-        // Cek status admin
-        if (admin.status !== 'active') {
-            return res.status(403).json({ 
-                msg: `Akun admin ${admin.status}. Hubungi super admin untuk mengaktifkan.` 
-            });
+            return res.status(404).json({ msg: "Email tidak ditemukan" });
         }
 
         // Cocokkan password
@@ -263,33 +212,45 @@ export const loginAdmin = async (req, res) => {
             return res.status(400).json({ msg: "Password salah" });
         }
 
-        // Ambil data yang dibutuhkan untuk token
-        const adminId = admin.id;
-        const name = admin.name;
-        const adminEmail = admin.email;
-        const role = admin.role;
+        // Cek status admin
+        if (admin.status !== 'active') {
+            return res.status(403).json({ 
+                msg: `Akun admin ${admin.status}. Hubungi super admin.`
+            });
+        }
 
-        // Buat access token (8 jam untuk admin)
+        // Buat access token (shorter expiry for cookies)
         const accessToken = jwt.sign(
-            { adminId, name, email: adminEmail, role },
-            process.env.ADMIN_ACCESS_TOKEN_SECRET || process.env.ACCESS_TOKEN_SECRET,
-            { expiresIn: '8h' }
+            { adminId: admin.id, name: admin.name, email: admin.email },
+            process.env.ADMIN_ACCESS_TOKEN_SECRET,
+            { expiresIn: '15m' }
         );
 
-        // Buat refresh token (7 hari untuk admin)
+        // Buat refresh token
         const refreshToken = jwt.sign(
-            { adminId, name, email: adminEmail, role },
-            process.env.ADMIN_REFRESH_TOKEN_SECRET || process.env.REFRESH_TOKEN_SECRET,
+            { adminId: admin.id, name: admin.name, email: admin.email },
+            process.env.ADMIN_REFRESH_TOKEN_SECRET,
             { expiresIn: '7d' }
         );
 
-        // Update refresh token di database (hook akan auto update last_login)
+        // Update refresh token dan last login di database
         await Admin.update(
-            { refresh_token: refreshToken },
-            { where: { id: adminId } }
+            { 
+                refresh_token: refreshToken,
+                last_login: new Date()
+            },
+            { where: { id: admin.id } }
         );
 
-        // Set refresh token ke cookie
+        // Set access token ke HTTP-only cookie
+        res.cookie('adminAccessToken', accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Strict',
+            maxAge: 15 * 60 * 1000 // 15 menit
+        });
+
+        // Set refresh token ke HTTP-only cookie
         res.cookie('adminRefreshToken', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -297,17 +258,15 @@ export const loginAdmin = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 hari
         });
 
-        // Kirim access token dan info admin
         res.status(200).json({
             msg: "Login admin berhasil",
             accessToken,
             admin: {
-                id: adminId,
-                name,
-                email: adminEmail,
-                role,
-                status: admin.status,
-                last_login: new Date()
+                id: admin.id,
+                name: admin.name,
+                email: admin.email,
+                role: admin.role,
+                permissions: admin.permissions
             }
         });
 
@@ -317,37 +276,46 @@ export const loginAdmin = async (req, res) => {
     }
 };
 
-// ⭐ LOGOUT ADMIN
+// ⭐ ADMIN LOGOUT (tetap)
 export const logoutAdmin = async (req, res) => {
     const refreshToken = req.cookies.adminRefreshToken;
-    if (!refreshToken) return res.sendStatus(204); // No Content
 
     try {
-        // Cari admin dengan refresh token
-        const admin = await Admin.findOne({
-            where: {
-                refresh_token: refreshToken
+        if (refreshToken) {
+            // Find admin and clear refresh token from database
+            const admin = await Admin.findOne({
+                where: { refresh_token: refreshToken }
+            });
+
+            if (admin) {
+                await Admin.update(
+                    { refresh_token: null },
+                    { where: { id: admin.id } }
+                );
             }
+        }
+
+        // Clear both cookies
+        res.clearCookie('adminAccessToken', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Strict'
         });
 
-        // Jika admin tidak ditemukan, tetap clear cookie
-        if (!admin) return res.sendStatus(204);
+        res.clearCookie('adminRefreshToken', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Strict'
+        });
 
-        const adminId = admin.id;
-
-        // Clear refresh token di database
-        await Admin.update(
-            { refresh_token: null },
-            { where: { id: adminId } }
-        );
-
-        // Clear cookie
-        res.clearCookie('adminRefreshToken');
         res.json({ msg: "Logout admin berhasil" });
 
     } catch (error) {
         console.error('Admin logout error:', error);
-        res.status(500).json({ msg: "Server error" });
+        // Still clear cookies even if database operation fails
+        res.clearCookie('adminAccessToken');
+        res.clearCookie('adminRefreshToken');
+        res.status(500).json({ msg: "Server error, but cookies cleared" });
     }
 };
 

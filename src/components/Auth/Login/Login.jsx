@@ -1,7 +1,11 @@
 // Login.jsx - UPDATED to save token
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+
 import { loginUser, getCurrentUser } from '../../../data/userLogin';
+
+import { loginUser, getCurrentUser } from '../../../data/userAuth'; // Updated import
+
 import '../../../styles/login.css'; 
 
 function Login() {

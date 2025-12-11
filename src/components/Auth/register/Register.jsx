@@ -1,7 +1,8 @@
 // src/pages/Register.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import OTPVerification from '../../OTPVerification'; // Fixed import path
+import OTPVerification from '../../OTPVerification';
+import { registerUser } from '../../../data/userAuth'; // Updated import
 import '../../../styles/register.css';
 
 function Register() {
@@ -19,9 +20,6 @@ function Register() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // API Base URL
-  const API_BASE_URL = 'http://localhost:5000';
 
   // Handle input changes
   const handleChange = (e) => {
@@ -89,55 +87,23 @@ function Register() {
     setLoading(true);
     setError('');
 
-    try {
-      console.log('Registering user...');
+    // Gunakan API function yang sudah rapi
+    const result = await registerUser({
+      nama: form.nama,
+      email: form.email,
+      password: form.password,
+      confirmPassword: form.confirmPassword,
+      phone: form.phone,
+      gender: form.gender
+    });
 
-      // Transform data untuk API (nama → name)
-      const apiData = {
-        name: form.nama.trim(),
-        email: form.email.trim().toLowerCase(),
-        password: form.password,
-        confirmPassword: form.confirmPassword,
-        phone: form.phone.trim(),
-        gender: form.gender
-      };
-
-      const response = await fetch(`${API_BASE_URL}/users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(apiData),
-      });
-
-      const data = await response.json();
-      console.log('Register response:', data);
-
-      if (response.ok) {
-        // Step 1 berhasil - pindah ke OTP verification
-        console.log('Registration successful, moving to OTP step');
-        setStep(2);
-        
-      } else {
-        // Handle specific error messages
-        if (response.status === 400) {
-          setError(data.msg || 'Data yang Anda masukkan tidak valid');
-        } else if (response.status === 409) {
-          setError('Email atau nomor HP sudah terdaftar');
-        } else {
-          setError(data.msg || 'Registrasi gagal');
-        }
-      }
-
-    } catch (error) {
-      console.error('Registration error:', error);
-      
-      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-        setError('Gagal terhubung ke server. Pastikan server berjalan di localhost:5000');
-      } else {
-        setError('Terjadi kesalahan saat registrasi. Silakan coba lagi.');
-      }
-    } finally {
+    if (result.success) {
+      // Registrasi berhasil - pindah ke OTP verification
+      console.log('Registration successful, moving to OTP step');
+      setStep(2);
+    } else {
+      // Registrasi gagal
+      setError(result.message);
       setLoading(false);
     }
   };

@@ -1,4 +1,8 @@
+
 // routes/index.js - COMPLETE FIXED VERSION
+
+// routes/index.js - Updated tanpa Catalog Management Routes
+
 import express from 'express';
 import path from 'path';
 import {
@@ -8,7 +12,6 @@ import {
   Logout,
   verifyOTP,
   resendOTP,
-  getApprovedUsers
 } from '../controllers/Users.js';
 import {
   predictTabular,
@@ -44,6 +47,7 @@ import {
 import { verifyAdminToken, requireSuperAdmin } from '../middleware/VerifyAdminToken.js';
 import { refreshAdminToken } from '../controllers/AdminRefreshToken.js';
 
+
 // Import catalog controllers
 import {
   requestCatalogAccess,
@@ -65,6 +69,7 @@ import {
   testEmailConnection,
   testEmailSending
 } from '../controllers/EmailController.js';
+
 
 import {
   getAllGalery,
@@ -89,6 +94,11 @@ import Users from '../models/userModel.js';
 import { Op } from 'sequelize';
 import bcrypt from 'bcrypt';
 
+
+import { saveToDataIkan } from '../controllers/Models.js';
+import { getAllDataIkan } from '../controllers/Models.js';
+
+
 const router = express.Router();
 
 // ==================== MULTER CONFIGURATION ====================
@@ -106,6 +116,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const filetypes = /jpeg|jpg|png|webp|bmp|heic|tif|tiff|mpo|pfm|dng/;
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
@@ -131,6 +142,7 @@ router.post('/token', refreshToken);
 router.delete('/logout', Logout);
 
 // Update Profile - Protected
+// Endpoint untuk memperbarui data profil - FIXED VERSION
 router.put('/users/update', verifyToken, async (req, res) => {
   try {
     const userId = req.userId;
@@ -233,9 +245,9 @@ router.post('/predict-image', upload.single('image'), predictImage);
 
 // ==================== SCAN & CATALOG ROUTES ====================
 router.post('/api/save-scan', upload.single('image'), saveScan);
-router.post('/api/save-to-catalog', verifyToken, upload.single('image'), saveToCatalog);
+router.post('/api/save-to-catalog', verifyToken, upload.single('image'), saveToCatalog); // Catatan: Jika saveToCatalog tidak diperlukan, hapus ini juga
 router.get('/api/get-scans', getScans);
-router.get('/api/get-catalog', getCatalog);
+router.get('/api/get-catalog', getCatalog); // Catatan: Jika getCatalog tidak diperlukan, hapus ini juga
 
 // ==================== 🔒 DATA IKAN / HISTORI ROUTES (SECURED) ====================
 // ✅ PROTECTED: User-specific data only
@@ -575,6 +587,14 @@ router.post('/api/email/admin/reject-user', verifyAdminToken, async (req, res) =
 
 router.post('/api/email/test', testEmailSending);
 
+// ==================== GALERY PUBLIC ROUTES ====================
+router.get('/api/galery', getAllGalery);
+router.get('/api/galery/:id', getGaleryById);
+router.post('/api/galery', verifyAdminToken, createGalery);
+router.put('/api/galery/:id', verifyAdminToken, updateGalery);
+router.delete('/api/galery/:id', verifyAdminToken, deleteGalery);
+
+
 // ==================== ADMIN AUTH ROUTES ====================
 router.post('/admin/create', createAdmin);
 router.post('/admin/login', loginAdmin);
@@ -595,6 +615,11 @@ router.delete('/api/galery/:id', verifyAdminToken, deleteGalery);
 router.get('/api/admin/approved-users', verifyAdminToken, getApprovedUsers);
 
 // ==================== RECIPE ROUTES ====================
+//dataikan
+router.post('/api/save-to-dataikan', upload.single('image'), saveToDataIkan);
+router.get('/api/data-ikan', getAllDataIkan);
+
+// Public routes (anyone can view recipes)
 router.get('/api/recipes', getAllRecipes);
 router.get('/api/recipes/fish-names', getUniqueFishNames);
 router.get('/api/recipes/:id', getRecipeById);

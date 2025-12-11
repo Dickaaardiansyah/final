@@ -6,16 +6,15 @@ function OTPVerification({ email, userName, onSuccess, onBack }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resendLoading, setResendLoading] = useState(false);
-  const [timer, setTimer] = useState(60); // Countdown untuk resend
+  const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
-  
+
   // Refs untuk input OTP
   const inputRefs = useRef([]);
 
-  // API Base URL
   const API_BASE_URL = 'http://localhost:5000';
 
-  // Timer countdown untuk resend OTP
+  // Timer countdown
   useEffect(() => {
     if (timer > 0) {
       const countdown = setTimeout(() => setTimer(timer - 1), 1000);
@@ -25,69 +24,55 @@ function OTPVerification({ email, userName, onSuccess, onBack }) {
     }
   }, [timer]);
 
-  // Focus ke input pertama saat component mount
   useEffect(() => {
-    if (inputRefs.current[0]) {
-      inputRefs.current[0].focus();
-    }
+    inputRefs.current[0]?.focus();
   }, []);
 
   const handleOtpChange = (index, value) => {
-    // Hanya terima angka
     if (!/^\d*$/.test(value)) return;
 
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Clear error saat user mengetik
     if (error) setError('');
 
-    // Auto-focus ke input berikutnya
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Auto-submit jika semua field terisi
     if (index === 5 && value && newOtp.every(digit => digit !== '')) {
       setTimeout(() => handleVerifyOTP(newOtp.join('')), 100);
     }
   };
 
   const handleKeyDown = (index, e) => {
-    // Backspace: hapus current dan focus ke previous
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
-    
-    // Enter: submit jika OTP lengkap
+
     if (e.key === 'Enter') {
       const otpCode = otp.join('');
-      if (otpCode.length === 6) {
-        handleVerifyOTP(otpCode);
-      }
+      if (otpCode.length === 6) handleVerifyOTP(otpCode);
     }
   };
 
   const handlePaste = (e) => {
     e.preventDefault();
-    const pasteData = e.clipboardData.getData('text').replace(/\D/g, ''); // Hanya angka
-    
+    const pasteData = e.clipboardData.getData('text').replace(/\D/g, '');
+
     if (pasteData.length === 6) {
       const newOtp = pasteData.split('');
       setOtp(newOtp);
-      
-      // Focus ke input terakhir
       inputRefs.current[5]?.focus();
-      
-      // Auto-submit
+
       setTimeout(() => handleVerifyOTP(pasteData), 100);
     }
   };
 
   const handleVerifyOTP = async (otpCode = null) => {
     const codeToVerify = otpCode || otp.join('');
-    
+
     if (codeToVerify.length !== 6) {
       setError('Kode OTP harus 6 digit');
       return;
@@ -97,44 +82,39 @@ function OTPVerification({ email, userName, onSuccess, onBack }) {
     setError('');
 
     try {
-      console.log('Verifying OTP:', { email, otp_code: codeToVerify });
+      console.log('Verifying OTP:', { email, otp: codeToVerify });
 
       const response = await fetch(`${API_BASE_URL}/verify-otp`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: email,
-          otp_code: codeToVerify,
+          otp: codeToVerify, // FIXED HERE
         }),
       });
 
       const data = await response.json();
       console.log('OTP verification response:', data);
 
-      if (response.ok && data.accessToken) {
-        // Verifikasi berhasil
+      if (response.ok) {
         console.log('OTP verification successful');
         onSuccess(data.user, data.accessToken);
-        
       } else {
         throw new Error(data.msg || 'Verifikasi OTP gagal');
       }
 
     } catch (error) {
       console.error('OTP verification error:', error);
-      
+
       if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
         setError('Gagal terhubung ke server');
       } else {
         setError(error.message || 'Terjadi kesalahan saat verifikasi');
       }
-      
-      // Clear OTP dan focus ke input pertama
+
       setOtp(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
-      
+
     } finally {
       setLoading(false);
     }
@@ -149,28 +129,20 @@ function OTPVerification({ email, userName, onSuccess, onBack }) {
 
       const response = await fetch(`${API_BASE_URL}/resend-otp`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
       });
 
       const data = await response.json();
       console.log('Resend OTP response:', data);
 
       if (response.ok) {
-        // Reset timer dan state
         setTimer(60);
         setCanResend(false);
         setOtp(['', '', '', '', '', '']);
-        
+
         alert('Kode OTP baru telah dikirim ke email Anda');
-        
-        // Focus ke input pertama
         inputRefs.current[0]?.focus();
-        
       } else {
         throw new Error(data.msg || 'Gagal mengirim ulang OTP');
       }
@@ -178,6 +150,7 @@ function OTPVerification({ email, userName, onSuccess, onBack }) {
     } catch (error) {
       console.error('Resend OTP error:', error);
       setError(error.message || 'Gagal mengirim ulang kode OTP');
+
     } finally {
       setResendLoading(false);
     }
@@ -192,31 +165,28 @@ function OTPVerification({ email, userName, onSuccess, onBack }) {
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <div style={{ 
-            fontSize: '48px', 
+          <div style={{
+            fontSize: '48px',
             marginBottom: '16px',
             animation: 'bounce 2s infinite'
-          }}>
-            📧
-          </div>
-          
-          <p className="subtitle">
-            Kami telah mengirim kode verifikasi ke:
-          </p>
-          <p style={{ 
-            fontWeight: 'bold', 
-            color: '#4a90e2', 
+          }}>📧</div>
+
+          <p className="subtitle">Kami telah mengirim kode verifikasi ke:</p>
+
+          <p style={{
+            fontWeight: 'bold',
+            color: '#4a90e2',
             fontSize: '16px',
             marginBottom: '8px'
           }}>
             {email}
           </p>
+
           <p style={{ color: '#666', fontSize: '14px' }}>
             Masukkan 6 digit kode verifikasi di bawah ini
           </p>
         </div>
 
-        {/* Error Message */}
         {error && (
           <div style={{
             backgroundColor: '#fee2e2',
@@ -228,12 +198,11 @@ function OTPVerification({ email, userName, onSuccess, onBack }) {
             textAlign: 'center',
             fontSize: '14px'
           }}>
-            <i className="fas fa-exclamation-triangle" style={{ marginRight: '8px' }}></i>
             {error}
           </div>
         )}
 
-        {/* OTP Input */}
+        {/* OTP Inputs */}
         <div style={{
           display: 'flex',
           justifyContent: 'center',
@@ -276,7 +245,7 @@ function OTPVerification({ email, userName, onSuccess, onBack }) {
           ))}
         </div>
 
-        {/* Submit Button */}
+        {/* Submit */}
         <button
           onClick={() => handleVerifyOTP()}
           disabled={otp.join('').length !== 6 || loading}
@@ -295,22 +264,15 @@ function OTPVerification({ email, userName, onSuccess, onBack }) {
             marginBottom: '20px'
           }}
         >
-          {loading ? (
-            <>
-              <span style={{ marginRight: '8px' }}>⏳</span>
-              Memverifikasi...
-            </>
-          ) : (
-            'Verifikasi Kode'
-          )}
+          {loading ? <>⏳ Memverifikasi...</> : 'Verifikasi Kode'}
         </button>
 
-        {/* Resend Section */}
+        {/* Resend */}
         <div style={{ textAlign: 'center' }}>
           <p style={{ color: '#666', fontSize: '14px', marginBottom: '12px' }}>
             Tidak menerima kode?
           </p>
-          
+
           {!canResend ? (
             <p style={{ color: '#666', fontSize: '14px' }}>
               Kirim ulang dalam {timer} detik
@@ -335,24 +297,8 @@ function OTPVerification({ email, userName, onSuccess, onBack }) {
           )}
         </div>
 
-        {/* Tips */}
-        <div style={{
-          marginTop: '30px',
-          padding: '15px',
-          backgroundColor: '#f8f9fa',
-          borderRadius: '8px',
-          fontSize: '12px',
-          color: '#666'
-        }}>
-          <strong>💡 Tips:</strong>
-          <ul style={{ margin: '8px 0 0 16px', paddingLeft: 0 }}>
-            <li>Cek folder spam jika tidak menerima email</li>
-            <li>Kode berlaku selama 10 menit</li>
-            <li>Bisa copy-paste kode OTP langsung</li>
-          </ul>
-        </div>
-
-        <style jsx>{`
+        {/* Animation Fix */}
+        <style>{`
           @keyframes bounce {
             0%, 20%, 50%, 80%, 100% {
               transform: translateY(0);

@@ -54,38 +54,6 @@ function Sidebar() {
 
         <li className={styles.navItem}>
           <Link 
-            to="/admin/pending-verification" 
-            className={`${styles.navLink} ${isActive('/admin/pending-verification') ? styles.active : ''}`}
-            onClick={(e) => handleNavigation('/admin/pending-verification', e)}
-            style={{ textDecoration: 'none' }}
-          >
-            <svg className={styles.navIcon} viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-            </svg>
-            <span>Menunggu Verifikasi</span>
-            <span className={styles.badge}>12</span>
-          </Link>
-        </li>
-
-        <li className={styles.navItem}>
-          <Link 
-            to="/admin/approved" 
-            className={`${styles.navLink} ${isActive('/admin/approved') ? styles.active : ''}`}
-            onClick={(e) => handleNavigation('/admin/approved', e)}
-            style={{ textDecoration: 'none' }}
-          >
-            <svg className={styles.navIcon} viewBox="0 0 24 24" fill="currentColor">
-              <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2 .89 2-2 2-2-.89-2-2zM4 18v-4h3v4h2v-4h2l1.13-4.5c.33-.67.85-1.2 1.48-1.53L15.5 7H13V5h4l1.5 2.84c.15.28.15.62 0 .89L16.97 12H18v4c0 1.11-.89 2-2 2s-2-.89-2-2v-2h-2v4H4z"/>
-              <path d="M12.5 11.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5S11 9.17 11 10s.67 1.5 1.5 1.5z"/>
-              <path d="M5.5 6C6.33 6 7 5.33 7 4.5S6.33 3 5.5 3 4 3.67 4 4.5 4.67 6 5.5 6z"/>
-            </svg>
-            <span>Daftar Anggota</span>
-            <span className={`${styles.badge} ${styles.success}`}>45</span>
-          </Link>
-        </li>
-
-        <li className={styles.navItem}>
-          <Link 
             to="/admin/rejected" 
             className={`${styles.navLink} ${isActive('/admin/rejected') ? styles.active : ''}`}
             onClick={(e) => handleNavigation('/admin/rejected', e)}

@@ -1,8 +1,94 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Fish, MapPin, Calendar, Target, Shield, AlertCircle, Info, ChefHat, Sprout } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function FishScanDetailModal({ fishScan, isOpen, onClose }) {
+  const [activeTab, setActiveTab] = useState('consumption');
+  const [recipes, setRecipes] = useState([]);
+  const [isLoadingRecipes, setIsLoadingRecipes] = useState(false);
+  const [expandedRecipes, setExpandedRecipes] = useState({});
+
+  const API_BASE_URL = 'http://localhost:5000';
+
+  // Helper function to get auth token
+  const getAuthToken = () => {
+    let token = localStorage.getItem('accessToken');
+    if (token) return token;
+
+    token = sessionStorage.getItem('accessToken');
+    if (token) return token;
+
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'accessToken') return value;
+    }
+    return null;
+  };
+
+  // Helper function to create headers with auth
+  const getAuthHeaders = () => {
+    const token = getAuthToken();
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
+  // Fetch recipes when modal opens or fish changes
+  useEffect(() => {
+    if (isOpen && fishScan) {
+      fetchRecipes(fishScan.fishData.name || fishScan.fishData.predicted_class);
+    }
+  }, [isOpen, fishScan]);
+
+  // Fetch recipes based on fish name
+  const fetchRecipes = async (fishName) => {
+    setIsLoadingRecipes(true);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/recipes/fish/${encodeURIComponent(fishName)}`,
+        {
+          method: 'GET',
+          headers: getAuthHeaders(),
+          credentials: 'include'
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.data && result.data.length > 0) {
+          setRecipes(result.data);
+        } else {
+          setRecipes([]);
+        }
+      } else {
+        setRecipes([]);
+      }
+    } catch (error) {
+      console.error('Error fetching recipes:', error);
+      setRecipes([]);
+    } finally {
+      setIsLoadingRecipes(false);
+    }
+  };
+
+  // Format recipe instructions to array
+  const formatInstructions = (instructions) => {
+    if (!instructions) return [];
+    const steps = instructions.split(/\d+\.\s+/).filter(step => step.trim());
+    return steps;
+  };
+
+  // Toggle recipe expansion
+  const toggleRecipeExpand = (index) => {
+    setExpandedRecipes(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
   if (!isOpen || !fishScan) return null;
 
   const formatDate = (dateString) => {
@@ -65,7 +151,27 @@ function FishScanDetailModal({ fishScan, isOpen, onClose }) {
 
   const safetyInfo = getSafetyLevel(safetyPercentage);
 
-  // Data untuk tab detail - hanya 2 tab
+  // Default budidaya items
+  const budidayaItems = [
+    {
+      name: 'Pastikan kualitas air tetap bersih dengan pH optimal',
+      description: '1. Ukur pH air secara rutin (ideal 6.5-8.5). 2. Ganti air secara berkala. 3. Gunakan filter untuk menjaga kebersihan. 4. Hindari overfeeding untuk mencegah pencemaran.'
+    },
+    {
+      name: 'Berikan pakan berkualitas sesuai jadwal',
+      description: '1. Beri pakan 2-3 kali sehari. 2. Gunakan pelet dengan protein 20-30%. 3. Sesuaikan jumlah pakan dengan bobot ikan (2-3% berat tubuh). 4. Pantau sisa pakan untuk hindari polusi.'
+    },
+    {
+      name: 'Monitor kesehatan ikan secara rutin',
+      description: '1. Periksa tanda penyakit seperti lesu atau bintik putih. 2. Karantina ikan sakit. 3. Gunakan obat jika diperlukan. 4. Jaga kepadatan ikan di kolam.'
+    },
+    {
+      name: 'Jaga suhu air sesuai kebutuhan spesies',
+      description: '1. Ideal suhu 25-30°C. 2. Gunakan pemanas jika diperlukan. 3. Hindari perubahan suhu mendadak. 4. Monitor suhu harian.'
+    }
+  ];
+
+  // Data untuk tab detail
   const detailTabs = [
     {
       id: 'consumption',
@@ -74,15 +180,182 @@ function FishScanDetailModal({ fishScan, isOpen, onClose }) {
       content: (
         <div className="detail-text">
           <div className="consumption-content">
-            <h3 className="section-title">Resep Masakan</h3>
-            <p className="section-description">
+            <h3 className="section-title" style={{ fontSize: '1.25rem', fontWeight: '700', color: '#1f2937', marginBottom: '1rem' }}>
+              Resep Masakan
+            </h3>
+            <p className="section-description" style={{ color: '#6b7280', marginBottom: '1.5rem' }}>
               Berikut adalah resep untuk ikan {fishScan.fishData.name}:
             </p>
             
-            <div className="recipe-placeholder">
-              <p>Informasi resep akan ditampilkan di sini berdasarkan hasil scan</p>
-            </div>
+            {isLoadingRecipes ? (
+              <div style={{ textAlign: 'center', padding: '2rem' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  border: '3px solid #e5e7eb',
+                  borderTop: '3px solid #2563eb',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                  margin: '0 auto 1rem'
+                }}></div>
+                <p style={{ color: '#6b7280' }}>Memuat resep...</p>
+              </div>
+            ) : recipes.length > 0 ? (
+              <div style={{ display: 'grid', gap: '1rem' }}>
+                {recipes.map((recipe, index) => (
+                  <div 
+                    key={recipe.id}
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(249, 250, 251, 0.9))',
+                      borderRadius: '12px',
+                      border: '1px solid #e5e7eb',
+                      overflow: 'hidden',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                      transition: 'all 0.3s'
+                    }}
+                  >
+                    <div 
+                      onClick={() => toggleRecipeExpand(index)}
+                      style={{
+                        padding: '1.25rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <h4 style={{ 
+                        margin: 0, 
+                        fontSize: '1rem', 
+                        fontWeight: '600', 
+                        color: '#1f2937',
+                        flex: 1
+                      }}>
+                        {recipe.title}
+                      </h4>
+                      <div style={{
+                        color: '#10b981',
+                        fontSize: '0.875rem',
+                        transform: expandedRecipes[index] ? 'rotate(90deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.3s'
+                      }}>
+                        ▶
+                      </div>
+                    </div>
+                    
+                    {expandedRecipes[index] && (
+                      <div style={{
+                        padding: '0 1.25rem 1.25rem',
+                        borderTop: '1px solid #e5e7eb'
+                      }}>
+                        {recipe.image_url && (
+                          <img 
+                            src={recipe.image_url} 
+                            alt={recipe.title} 
+                            style={{
+                              width: '100%',
+                              borderRadius: '8px',
+                              marginTop: '1rem',
+                              marginBottom: '1rem',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                            }}
+                          />
+                        )}
+                        
+                        <div style={{ marginBottom: '1rem' }}>
+                          <strong style={{ 
+                            color: '#2563eb', 
+                            display: 'block', 
+                            marginBottom: '0.5rem',
+                            fontSize: '0.95rem'
+                          }}>
+                            Bahan-bahan:
+                          </strong>
+                          <p style={{ 
+                            margin: 0, 
+                            lineHeight: 1.7, 
+                            whiteSpace: 'pre-line',
+                            color: '#374151',
+                            fontSize: '0.9rem'
+                          }}>
+                            {recipe.ingredients}
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <strong style={{ 
+                            color: '#2563eb', 
+                            display: 'block', 
+                            marginBottom: '0.5rem',
+                            fontSize: '0.95rem'
+                          }}>
+                            Cara Membuat:
+                          </strong>
+                          <div style={{ margin: 0, lineHeight: 1.7 }}>
+                            {formatInstructions(recipe.instructions).map((step, idx) => (
+                              <div key={idx} style={{
+                                position: 'relative',
+                                paddingLeft: '2.5rem',
+                                marginBottom: '0.75rem',
+                                fontSize: '0.9rem',
+                                color: '#374151'
+                              }}>
+                                <div style={{
+                                  position: 'absolute',
+                                  left: 0,
+                                  top: 0,
+                                  width: '1.5rem',
+                                  height: '1.5rem',
+                                  background: 'linear-gradient(135deg, #2563eb, #10b981)',
+                                  color: 'white',
+                                  borderRadius: '50%',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontWeight: '700',
+                                  fontSize: '0.75rem'
+                                }}>
+                                  {idx + 1}
+                                </div>
+                                {step}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '3rem 2rem',
+                background: 'rgba(249, 250, 251, 0.5)',
+                borderRadius: '12px',
+                border: '1px solid #e5e7eb'
+              }}>
+                <i className="fas fa-utensils" style={{ 
+                  fontSize: '3rem', 
+                  color: '#d1d5db', 
+                  marginBottom: '1rem' 
+                }}></i>
+                <p style={{ color: '#6b7280', margin: '0 0 0.5rem 0' }}>
+                  Belum ada resep tersedia untuk ikan {fishScan.fishData.name}.
+                </p>
+                <p style={{ color: '#9ca3af', fontSize: '0.875rem', margin: 0 }}>
+                  Resep akan segera ditambahkan!
+                </p>
+              </div>
+            )}
           </div>
+          
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
         </div>
       )
     },
@@ -93,21 +366,53 @@ function FishScanDetailModal({ fishScan, isOpen, onClose }) {
       content: (
         <div className="detail-text">
           <div className="cultivation-content">
-            <h3 className="section-title">Panduan Budidaya</h3>
-            <p className="section-description">
-              Informasi budidaya untuk ikan {fishScan.fishData.name}:
+            <h3 className="section-title" style={{ fontSize: '1.25rem', fontWeight: '700', color: '#1f2937', marginBottom: '1rem' }}>
+              Panduan Budidaya
+            </h3>
+            <p className="section-description" style={{ color: '#6b7280', marginBottom: '1.5rem' }}>
+              Tips budidaya untuk ikan {fishScan.fishData.name}:
             </p>
             
-            <div className="cultivation-placeholder">
-              <p>Informasi budidaya akan ditampilkan di sini berdasarkan hasil scan</p>
+            <div style={{ display: 'grid', gap: '1rem' }}>
+              {budidayaItems.map((item, index) => (
+                <div 
+                  key={index}
+                  style={{
+                    padding: '1.25rem',
+                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(249, 250, 251, 0.9))',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
+                  }}
+                >
+                  <h4 style={{ 
+                    margin: '0 0 0.75rem 0', 
+                    fontSize: '1rem', 
+                    fontWeight: '600', 
+                    color: '#1f2937',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}>
+                    <span style={{ color: '#10b981' }}>•</span>
+                    {item.name}
+                  </h4>
+                  <p style={{ 
+                    margin: 0, 
+                    color: '#374151', 
+                    lineHeight: 1.7,
+                    fontSize: '0.9rem'
+                  }}>
+                    {item.description}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       )
     }
   ];
-
-  const [activeTab, setActiveTab] = React.useState('consumption');
 
   return (
     <AnimatePresence>
@@ -245,7 +550,7 @@ function FishScanDetailModal({ fishScan, isOpen, onClose }) {
                     </motion.div>
                   </div>
 
-                  {/* Safety Section - Dipindah ke atas tab */}
+                  {/* Safety Section */}
                   <motion.div
                     className="safety-section bg-gray-800/30 rounded-xl p-4 border-l-4"
                     style={{ borderColor: safetyInfo.color }}
@@ -295,21 +600,53 @@ function FishScanDetailModal({ fishScan, isOpen, onClose }) {
                     </div>
                   </motion.div>
 
-                  {/* Detail Tabs - Hanya 2 tab */}
+                  {/* Detail Tabs */}
                   <div className="detail-tabs-container">
-                    <div className="detail-tabs">
+                    <div className="detail-tabs" style={{ 
+                      display: 'flex', 
+                      gap: '0.5rem', 
+                      marginBottom: '1rem',
+                      background: 'rgba(31, 41, 55, 0.5)',
+                      padding: '0.5rem',
+                      borderRadius: '12px'
+                    }}>
                       {detailTabs.map(tab => (
                         <button
                           key={tab.id}
                           className={`detail-tab ${activeTab === tab.id ? 'active' : ''}`}
                           onClick={() => setActiveTab(tab.id)}
+                          style={{
+                            flex: 1,
+                            padding: '0.75rem 1rem',
+                            border: 'none',
+                            background: activeTab === tab.id 
+                              ? 'linear-gradient(135deg, #2563eb, #10b981)' 
+                              : 'transparent',
+                            color: activeTab === tab.id ? 'white' : '#9ca3af',
+                            fontSize: '0.875rem',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            borderRadius: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
+                            transition: 'all 0.3s'
+                          }}
                         >
                           {tab.icon}
                           {tab.label}
                         </button>
                       ))}
                     </div>
-                    <div className="detail-content-area">
+                    <div className="detail-content-area" style={{
+                      background: 'rgba(31, 41, 55, 0.3)',
+                      borderRadius: '12px',
+                      padding: '1.5rem',
+                      minHeight: '300px',
+                      maxHeight: '400px',
+                      overflowY: 'auto'
+                    }}>
                       {detailTabs.find(tab => tab.id === activeTab)?.content}
                     </div>
                   </div>

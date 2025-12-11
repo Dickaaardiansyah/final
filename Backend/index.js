@@ -8,43 +8,52 @@ import router from './routes/index.js';
 dotenv.config();
 const app = express();
 
+// Cek env
 console.log('ACCESS_TOKEN_SECRET:', process.env.ACCESS_TOKEN_SECRET);
 console.log('REFRESH_TOKEN_SECRET:', process.env.REFRESH_TOKEN_SECRET);
-console.log('All env vars:', Object.keys(process.env).filter(key => key.includes('TOKEN')));
 
-try {
+// Koneksi ke DB + Sync tabel otomatis
+const connectDB = async () => {
+  try {
     await db.authenticate();
-    console.log('Database connected...');
-} catch (error) {
-  console.error('Database connection failed:', error);
-}
+    console.log('✅ Database connected');
 
-// CORS configuration
-app.use(cors({ 
-  credentials: true, 
+    // 🔥 Auto create/update tabel dari model
+    await db.sync({ alter: true }); // aman, tidak hapus data
+    console.log('🟢 All models synchronized');
+
+  } catch (error) {
+    console.error('❌ Database connection error:', error);
+  }
+};
+connectDB();
+
+// CORS
+app.use(cors({
+  credentials: true,
   origin: 'http://localhost:5173'
 }));
 
-app.use(cookieParser()); 
+app.use(cookieParser());
 
-// Increase body parser limits untuk handle gambar base64
-app.use(express.json({ 
-  limit: '50mb',           
-  parameterLimit: 100000,  
-  extended: true 
+// Body parser untuk file base64
+app.use(express.json({
+  limit: '50mb',
+  parameterLimit: 100000
+}));
+app.use(express.urlencoded({
+  extended: true,
+  limit: '50mb',
+  parameterLimit: 100000
 }));
 
-app.use(express.urlencoded({ 
-  limit: '50mb',           
-  parameterLimit: 100000,
-  extended: true 
-}));
-
-// Serve static files untuk uploaded images
+// Folder static untuk upload file
 app.use('/uploads', express.static('uploads'));
 
+// Routing
 app.use(router);
 
+// Run server
 app.listen(5000, () => {
-  console.log('🚀 Server is running on http://localhost:5000');
+  console.log('🚀 Server is running at http://localhost:5000');
 });

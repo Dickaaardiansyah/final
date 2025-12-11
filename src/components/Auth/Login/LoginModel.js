@@ -1,4 +1,4 @@
-// LoginModel.js
+// LoginModel.js - FIXED VERSION
 export default class LoginModel {
   constructor() {
     this.API_BASE_URL = 'http://localhost:5000';
@@ -8,6 +8,7 @@ export default class LoginModel {
     const response = await fetch(`${this.API_BASE_URL}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // ✅ Include cookies
       body: JSON.stringify({ email, password }),
     });
 
@@ -19,15 +20,41 @@ export default class LoginModel {
   }
 
   saveAuthData(data) {
-    localStorage.setItem('token', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
+    // ✅ CRITICAL FIX: Use 'accessToken' as key (not 'token')
+    localStorage.setItem('accessToken', data.accessToken); // ← Changed from 'token'
+    
+    if (data.refreshToken) {
+      localStorage.setItem('refreshToken', data.refreshToken);
+    }
+    
     if (data.user) {
       localStorage.setItem('user', JSON.stringify(data.user));
       localStorage.setItem('userId', data.user.id);
     }
+
+    console.log('✅ Token saved to localStorage as "accessToken"');
+    console.log('🔑 Token preview:', data.accessToken.substring(0, 50) + '...');
   }
 
   isLoggedIn() {
-    return !!localStorage.getItem('token');
+    // ✅ Check for 'accessToken' (not 'token')
+    const token = localStorage.getItem('accessToken');
+    const hasToken = !!token;
+    
+    console.log('🔐 Login status check:', hasToken ? 'Logged in' : 'Not logged in');
+    
+    return hasToken;
+  }
+
+  getToken() {
+    return localStorage.getItem('accessToken');
+  }
+
+  logout() {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('userId');
+    console.log('🚪 Logged out - all tokens cleared');
   }
 }

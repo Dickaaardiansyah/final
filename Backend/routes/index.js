@@ -1,4 +1,4 @@
-// routes/index.js - Updated dengan Cookie Management Routes
+// routes/index.js - COMPLETE FIXED VERSION
 import express from 'express';
 import path from 'path';
 import {
@@ -18,6 +18,18 @@ import {
   getScans,
   getCatalog
 } from '../controllers/Models.js';
+
+// ✅ Import Histori Controller
+import {
+  getAllDataIkan,
+  getDataIkanById,
+  getMyDataIkan,
+  saveToDataIkan,
+  updateDataIkan,
+  deleteDataIkan,
+  getDataIkanStatistics
+} from '../controllers/Histori.js';
+
 import { verifyToken } from '../middleware/VerifyToken.js';
 import { refreshToken } from '../controllers/RefreshToken.js';
 import {
@@ -32,7 +44,7 @@ import {
 import { verifyAdminToken, requireSuperAdmin } from '../middleware/VerifyAdminToken.js';
 import { refreshAdminToken } from '../controllers/AdminRefreshToken.js';
 
-// ⭐ NEW: Import updated catalog controllers
+// Import catalog controllers
 import {
   requestCatalogAccess,
   getCatalogAccessStatus,
@@ -45,7 +57,7 @@ import {
   uploadKTP
 } from '../controllers/CatalogController.js';
 
-// ⭐ NEW: Import email controllers
+// Import email controllers
 import {
   sendCatalogReviewEmail,
   sendCatalogApprovedEmailController,
@@ -75,28 +87,26 @@ import {
 import multer from 'multer';
 import Users from '../models/userModel.js';
 import { Op } from 'sequelize';
-import bcrypt from 'bcrypt'; // Tambahkan bcrypt untuk hash password
-import { saveToDataIkan } from '../controllers/Models.js';
-import { getAllDataIkan } from '../controllers/Models.js';
+import bcrypt from 'bcrypt';
 
 const router = express.Router();
 
+// ==================== MULTER CONFIGURATION ====================
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Folder penyimpanan tetap
+    cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9); // Hash unik
-    const ext = path.extname(file.originalname); // Ambil ekstensi asli (misalnya .jpg)
-    cb(null, uniqueSuffix + ext); // Simpan sebagai hash + ekstensi
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, uniqueSuffix + ext);
   }
 });
 
 const upload = multer({
-  storage: storage, // Gunakan storage custom
-  limits: { fileSize: 5 * 1024 * 1024 }, // Maksimal 5MB
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
   fileFilter: (req, file, cb) => {
-    // Validasi format file (opsional, untuk mencegah error lebih awal)
     const filetypes = /jpeg|jpg|png|webp|bmp|heic|tif|tiff|mpo|pfm|dng/;
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = filetypes.test(file.mimetype);
@@ -108,33 +118,29 @@ const upload = multer({
   }
 });
 
-// ==================== AUTH ROUTES ====================
-router.get('/users', verifyToken, getUsers);
+// ==================== AUTH ROUTES (USER) ====================
+// Public routes - No authentication needed
 router.post('/users', Register);
 router.post('/login', Login);
-router.post('/token', refreshToken);
-router.delete('/logout', Logout);
-
-// OTP Routes
 router.post('/verify-otp', verifyOTP);
 router.post('/resend-otp', resendOTP);
 
-// Endpoint untuk memperbarui data profil
-// Endpoint untuk memperbarui data profil - FIXED VERSION
+// Protected routes - Need authentication
+router.get('/users', verifyToken, getUsers);
+router.post('/token', refreshToken);
+router.delete('/logout', Logout);
+
+// Update Profile - Protected
 router.put('/users/update', verifyToken, async (req, res) => {
   try {
     const userId = req.userId;
 
-    // Log untuk debugging
-    console.log('🔍 Update request from user:', userId);
-    console.log('📝 Request body:', req.body);
+    console.log('📝 Update request from user:', userId);
+    console.log('📋 Request body:', req.body);
 
-    // Destructure dengan field names yang sesuai dengan model database
     const { name, email, password, phone, gender, birthday } = req.body;
-
     const updateData = {};
 
-    // Validasi dan build update object
     if (name !== undefined) {
       if (name.length < 2) {
         return res.status(400).json({ msg: 'Nama pengguna minimal 2 karakter' });
@@ -199,7 +205,6 @@ router.put('/users/update', verifyToken, async (req, res) => {
       });
     }
 
-    // Update user
     const [affectedRows] = await Users.update(updateData, { where: { id: userId } });
 
     if (affectedRows === 0) {
@@ -226,32 +231,44 @@ router.put('/users/update', verifyToken, async (req, res) => {
 router.post('/predict', predictTabular);
 router.post('/predict-image', upload.single('image'), predictImage);
 
-// ==================== EXISTING SAVE ROUTES ====================
+// ==================== SCAN & CATALOG ROUTES ====================
 router.post('/api/save-scan', upload.single('image'), saveScan);
 router.post('/api/save-to-catalog', verifyToken, upload.single('image'), saveToCatalog);
 router.get('/api/get-scans', getScans);
 router.get('/api/get-catalog', getCatalog);
 
-// ==================== ⭐ CATALOG PERMISSION SYSTEM ROUTES ====================
-// USER Catalog Routes (need login)
+// ==================== 🔒 DATA IKAN / HISTORI ROUTES (SECURED) ====================
+// ✅ PROTECTED: User-specific data only
+router.get('/api/data-ikan/my', verifyToken, getMyDataIkan);
+router.get('/api/data-ikan/statistics', verifyToken, getDataIkanStatistics);
+
+// ✅ PROTECTED: With ownership check
+router.get('/api/data-ikan/:id', verifyToken, getDataIkanById);
+router.put('/api/data-ikan/:id', verifyToken, upload.single('image'), updateDataIkan);
+router.delete('/api/data-ikan/:id', verifyToken, deleteDataIkan);
+
+// ✅ CRITICAL FIX: Add verifyToken middleware here!
+router.post('/api/save-to-dataikan', verifyToken, upload.single('image'), saveToDataIkan);
+
+// ✅ ADMIN ONLY: Get all data
+router.get('/api/data-ikan/all', verifyToken, getAllDataIkan);
+
+// Backward compatibility - redirect to authenticated version
+router.get('/api/data-ikan', verifyToken, getMyDataIkan);
+
+// ==================== CATALOG PERMISSION SYSTEM ROUTES ====================
 router.post('/api/catalog/request-access', verifyToken, requestCatalogAccess);
 router.get('/api/catalog/my-status', verifyToken, getCatalogAccessStatus);
 
-// Route untuk check approval status
 router.get('/api/catalog/approval-status', verifyToken, async (req, res) => {
   try {
     console.log('🔍 Checking approval status for user:', req.userId);
-
-    // Call the existing getCatalogAccessStatus function
     const result = await getCatalogAccessStatus(req, res);
-
-    // If the function hasn't sent a response yet, we'll handle it here
     if (!res.headersSent) {
       return result;
     }
   } catch (error) {
     console.error('❌ Error checking approval status:', error);
-
     if (!res.headersSent) {
       return res.status(500).json({
         success: false,
@@ -263,13 +280,11 @@ router.get('/api/catalog/approval-status', verifyToken, async (req, res) => {
   }
 });
 
-// ==================== ⭐ NEW: HTTP COOKIES MANAGEMENT ROUTES ====================
-// Get catalog status from HTTP cookies
+// ==================== HTTP COOKIES MANAGEMENT ROUTES ====================
 router.get('/api/catalog/status', verifyToken, async (req, res) => {
   try {
-    console.log('📖 Getting catalog status from cookies for user:', req.user?.email || req.userId);
+    console.log('📖 Getting catalog status from cookies for user:', req.userEmail || req.userId);
 
-    // Get status from cookies
     const catalogRequestSubmitted = req.cookies.catalogRequestSubmitted === 'true';
     const adminApprovalStatus = req.cookies.adminApprovalStatus || 'pending';
 
@@ -295,25 +310,23 @@ router.get('/api/catalog/status', verifyToken, async (req, res) => {
   }
 });
 
-// Set catalog status to HTTP cookies
 router.post('/api/catalog/status', verifyToken, async (req, res) => {
   try {
     const { catalogRequestSubmitted, adminApprovalStatus } = req.body;
 
-    console.log('💾 Setting catalog status to cookies for user:', req.user?.email || req.userId);
+    console.log('💾 Setting catalog status to cookies for user:', req.userEmail || req.userId);
     console.log('🍪 Setting values:', {
       catalogRequestSubmitted,
       adminApprovalStatus
     });
 
     const cookieOptions = {
-      httpOnly: true,        // Cannot be accessed by JavaScript
-      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-      sameSite: 'lax',      // CSRF protection
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     };
 
-    // Set HTTP-only cookies
     if (catalogRequestSubmitted !== undefined) {
       res.cookie('catalogRequestSubmitted', catalogRequestSubmitted.toString(), cookieOptions);
     }
@@ -340,17 +353,15 @@ router.post('/api/catalog/status', verifyToken, async (req, res) => {
   }
 });
 
-// Clear catalog status from HTTP cookies
 router.delete('/api/catalog/status', verifyToken, async (req, res) => {
   try {
-    console.log('🗑️ Clearing catalog status cookies for user:', req.user?.email || req.userId);
+    console.log('🗑️ Clearing catalog status cookies for user:', req.userEmail || req.userId);
 
-    // Clear cookies by setting them to expire immediately
     const clearCookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      expires: new Date(0) // Expire immediately
+      expires: new Date(0)
     };
 
     res.clearCookie('catalogRequestSubmitted', clearCookieOptions);
@@ -370,10 +381,9 @@ router.delete('/api/catalog/status', verifyToken, async (req, res) => {
   }
 });
 
-// Debug endpoint to check all cookies
 router.get('/api/debug/cookies', verifyToken, async (req, res) => {
   try {
-    console.log('🐛 Debug: Checking all cookies for user:', req.user?.email || req.userId);
+    console.log('🛠 Debug: Checking all cookies for user:', req.userEmail || req.userId);
 
     const allCookies = req.cookies;
     const catalogCookies = {
@@ -391,8 +401,8 @@ router.get('/api/debug/cookies', verifyToken, async (req, res) => {
         catalog_cookies: catalogCookies,
         user: {
           id: req.userId,
-          name: req.user?.name,
-          email: req.user?.email
+          name: req.userName,
+          email: req.userEmail
         },
         timestamp: new Date().toISOString()
       }
@@ -407,33 +417,23 @@ router.get('/api/debug/cookies', verifyToken, async (req, res) => {
   }
 });
 
-// ==================== EXISTING CATALOG ROUTES ====================
+// ==================== CATALOG ENTRIES ROUTES ====================
 router.post('/api/catalog/save-prediction', verifyToken, savePredictionToCatalog);
-
-// ⭐ FIXED: Get catalog entries - menggunakan existing controller function
 router.get('/api/catalog/entries', getAllCatalogEntries);
-
-// ⭐ SIMPLE SOLUTION: Route wrapper untuk filter data pribadi
 router.post('/api/catalog/upload-ktp', verifyToken, upload.single('ktp'), uploadKTP);
 
-// ADMIN Catalog Routes (need admin login)
+// ADMIN Catalog Routes
 router.get('/api/catalog/admin/pending-requests', verifyAdminToken, getPendingCatalogRequests);
 router.post('/api/catalog/admin/approve/:userId', verifyAdminToken, approveCatalogRequest);
 router.post('/api/catalog/admin/reject/:userId', verifyAdminToken, rejectCatalogRequest);
 router.get('/api/catalog/admin/statistics', verifyAdminToken, getCatalogStatistics);
 
-// ==================== ⭐ EMAIL NOTIFICATION ROUTES ====================
-// Test email connection
+// ==================== EMAIL NOTIFICATION ROUTES ====================
 router.get('/api/email/test-connection', testEmailConnection);
-
-// User email routes (with authentication)
 router.post('/api/email/catalog-review', verifyToken, sendCatalogReviewEmail);
-
-// Admin email routes (with admin authentication)
 router.post('/api/email/catalog-approved', verifyAdminToken, sendCatalogApprovedEmailController);
 router.post('/api/email/catalog-rejected', verifyAdminToken, sendCatalogRejectedEmailController);
 
-// Admin approval/rejection with automatic email sending
 router.post('/api/email/admin/approve-user', verifyAdminToken, async (req, res) => {
   try {
     const { userId, email, name } = req.body;
@@ -447,13 +447,11 @@ router.post('/api/email/admin/approve-user', verifyAdminToken, async (req, res) 
 
     console.log('👨‍💼 Admin approving catalog access for user:', userId);
 
-    // Create new request object for approveCatalogRequest
     const approvalReq = {
       ...req,
       params: { userId }
     };
 
-    // Create new response object that doesn't send immediately
     let approvalResult;
     const approvalRes = {
       ...res,
@@ -461,11 +459,9 @@ router.post('/api/email/admin/approve-user', verifyAdminToken, async (req, res) 
       status: (code) => ({ json: (data) => { approvalResult = { ...data, statusCode: code }; return data; } })
     };
 
-    // Call approval function
     await approveCatalogRequest(approvalReq, approvalRes);
 
     if (approvalResult && !approvalResult.msg?.includes('gagal')) {
-      // Create email request
       const emailReq = {
         ...req,
         body: { email, name }
@@ -478,7 +474,6 @@ router.post('/api/email/admin/approve-user', verifyAdminToken, async (req, res) 
         status: (code) => ({ json: (data) => { emailResult = { ...data, statusCode: code }; return data; } })
       };
 
-      // Send approval email
       await sendCatalogApprovedEmailController(emailReq, emailRes);
 
       return res.json({
@@ -521,14 +516,12 @@ router.post('/api/email/admin/reject-user', verifyAdminToken, async (req, res) =
 
     console.log('👨‍💼 Admin rejecting catalog access for user:', userId);
 
-    // Create new request object for rejectCatalogRequest
     const rejectionReq = {
       ...req,
       params: { userId },
       body: { ...req.body, reason }
     };
 
-    // Create new response object that doesn't send immediately
     let rejectionResult;
     const rejectionRes = {
       ...res,
@@ -536,11 +529,9 @@ router.post('/api/email/admin/reject-user', verifyAdminToken, async (req, res) =
       status: (code) => ({ json: (data) => { rejectionResult = { ...data, statusCode: code }; return data; } })
     };
 
-    // Call rejection function
     await rejectCatalogRequest(rejectionReq, rejectionRes);
 
     if (rejectionResult && !rejectionResult.msg?.includes('gagal')) {
-      // Create email request
       const emailReq = {
         ...req,
         body: { email, name, reason }
@@ -553,7 +544,6 @@ router.post('/api/email/admin/reject-user', verifyAdminToken, async (req, res) =
         status: (code) => ({ json: (data) => { emailResult = { ...data, statusCode: code }; return data; } })
       };
 
-      // Send rejection email
       await sendCatalogRejectedEmailController(emailReq, emailRes);
 
       return res.json({
@@ -583,11 +573,7 @@ router.post('/api/email/admin/reject-user', verifyAdminToken, async (req, res) =
   }
 });
 
-// Test email sending (for development)
 router.post('/api/email/test', testEmailSending);
-
-// ==================== GALERY PUBLIC ROUTES (NO AUTH) ====================
-// Tambahkan setelah email routes dan sebelum admin auth routes
 
 // ==================== ADMIN AUTH ROUTES ====================
 router.post('/admin/create', createAdmin);
@@ -595,17 +581,12 @@ router.post('/admin/login', loginAdmin);
 router.get('/admin/token', refreshAdminToken);
 router.delete('/admin/logout', logoutAdmin);
 
-// Protected admin routes
 router.get('/admin/profile', verifyAdminToken, getAdmin);
 router.get('/admin/all', verifyAdminToken, requireSuperAdmin, getAllAdmins);
 router.put('/admin/:adminId/status', verifyAdminToken, requireSuperAdmin, updateAdminStatus);
 router.put('/admin/:adminId/password', verifyAdminToken, updateAdminPassword);
 
-//dataikan
-router.post('/api/save-to-dataikan', upload.single('image'), saveToDataIkan);
-router.get('/api/data-ikan', getAllDataIkan);
-
-// Admin routes (perlu auth admin) - untuk mengelola galeri
+// ==================== GALERY ROUTES ====================
 router.get('/api/galery', getAllGalery);
 router.get('/api/galery/:id', getGaleryById);
 router.post('/api/galery', verifyAdminToken, createGalery);
@@ -613,13 +594,12 @@ router.put('/api/galery/:id', verifyAdminToken, updateGalery);
 router.delete('/api/galery/:id', verifyAdminToken, deleteGalery);
 router.get('/api/admin/approved-users', verifyAdminToken, getApprovedUsers);
 
-// Public routes (anyone can view recipes)
+// ==================== RECIPE ROUTES ====================
 router.get('/api/recipes', getAllRecipes);
 router.get('/api/recipes/fish-names', getUniqueFishNames);
 router.get('/api/recipes/:id', getRecipeById);
 router.get('/api/recipes/fish/:fishName', getRecipesByFishName);
 
-// Admin routes (need admin auth to create/update/delete)
 router.post('/api/recipes', verifyAdminToken, createRecipe);
 router.put('/api/recipes/:id', verifyAdminToken, updateRecipe);
 router.delete('/api/recipes/:id', verifyAdminToken, deleteRecipe);

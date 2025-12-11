@@ -21,6 +21,49 @@ function ScanUpload() {
 
   const API_BASE_URL = 'http://localhost:5000';
 
+  const getAuthToken = () => {
+    // Try localStorage first
+    let token = localStorage.getItem('accessToken');
+    if (token) {
+      console.log('✅ Token found in localStorage');
+      return token;
+    }
+
+    // Try sessionStorage
+    token = sessionStorage.getItem('accessToken');
+    if (token) {
+      console.log('✅ Token found in sessionStorage');
+      return token;
+    }
+
+    // Try cookie
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'accessToken') {
+        console.log('✅ Token found in cookies');
+        return value;
+      }
+    }
+
+    console.warn('⚠️ No token found anywhere!');
+    return null;
+  };
+
+  // 🔐 Helper function to create headers with auth
+  const getAuthHeaders = () => {
+    const token = getAuthToken();
+    const headers = {};
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      console.log('🔐 Adding Authorization header');
+    } else {
+      console.warn('⚠️ No token available for request');
+    }
+    
+    return headers;
+  };
   // In-memory storage
   const [savedData, setSavedData] = useState({});
 
@@ -50,6 +93,7 @@ function ScanUpload() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/recipes/fish/${encodeURIComponent(fishName)}`, {
         method: 'GET',
+         headers: getAuthHeaders(), // ✅ Add auth headers
         credentials: 'include'
       });
 
@@ -351,11 +395,19 @@ function ScanUpload() {
       return;
     }
 
+    // 🔐 Check if token exists
+    const token = getAuthToken();
+    if (!token) {
+      alert('Anda harus login untuk menyimpan data. Silakan login terlebih dahulu.');
+      return;
+    }
+
     setIsSaving(true);
     setError(null);
 
     try {
       const formData = new FormData();
+      
       if (imageFile) {
         formData.append('image', imageFile);
       }
@@ -367,24 +419,34 @@ function ScanUpload() {
       formData.append('konsumsi', analysisResult.konsumsi);
       formData.append('timestamp', new Date().toISOString());
 
+      console.log('💾 Saving to database with authentication...');
+
+      // ✅ CRITICAL: Add Authorization header
       const response = await fetch(`${API_BASE_URL}/api/save-to-dataikan`, {
         method: 'POST',
         mode: 'cors',
         credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}` // ✅ Add token!
+        },
         body: formData
       });
 
+      console.log('📡 Response status:', response.status);
+
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        const errorData = await response.json();
+        console.error('❌ Save failed:', errorData);
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
       const result = await response.json();
+      console.log('✅ Save successful:', result);
 
       if (result.status === 'success' || result.success) {
         const successMessage = document.createElement('div');
         successMessage.className = 'success-toast';
-        successMessage.textContent = 'Data berhasil disimpan ke database!';
+        successMessage.textContent = '✅ Data berhasil disimpan ke database!';
         successMessage.style.cssText = `
           position: fixed;
           top: 2rem;
@@ -407,7 +469,13 @@ function ScanUpload() {
       }
 
     } catch (error) {
+      console.error('❌ Error saving to database:', error);
       setError('Gagal menyimpan data: ' + error.message);
+      alert(`Gagal menyimpan data: ${error.message}`);
+      
+      if (error.message.includes('401') || error.message.includes('login')) {
+        alert('Sesi Anda telah berakhir. Silakan login kembali.');
+      }
     } finally {
       setIsSaving(false);
     }

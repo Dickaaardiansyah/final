@@ -1,6 +1,7 @@
+// Login.jsx - UPDATED to save token
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginUser, getCurrentUser } from '../../../data/userLogin'; // Import API function
+import { loginUser, getCurrentUser } from '../../../data/userLogin';
 import '../../../styles/login.css'; 
 
 function Login() {
@@ -28,10 +29,9 @@ function Login() {
       try {
         const userResult = await getCurrentUser();
         if (userResult.success) {
-          navigate('/'); // Redirect ke home jika sudah login
+          navigate('/');
         }
       } catch (error) {
-        // User not logged in, stay on login page
         console.log('User not logged in');
       }
     };
@@ -46,7 +46,6 @@ function Login() {
       [name]: type === 'checkbox' ? checked : value,
     }));
     
-    // Clear error saat user mengetik
     if (error) {
       setError('');
     }
@@ -63,14 +62,35 @@ function Login() {
     setLoading(true);
     setError('');
 
-    // Gunakan API function yang sudah rapi
+    console.log('🔐 Attempting login...');
+
+    // Call login API
     const result = await loginUser({
       email: form.email,
       password: form.password
     });
 
+    console.log('📡 Login result:', result);
+
     if (result.success) {
-      // Login berhasil - tampilkan toast
+      // ✅ Login berhasil
+      console.log('✅ Login successful!');
+      
+      // 🔑 CRITICAL: Save token to localStorage
+      if (result.accessToken) {
+        localStorage.setItem('accessToken', result.accessToken);
+        console.log('💾 Token saved to localStorage');
+        console.log('🔑 Token preview:', result.accessToken.substring(0, 50) + '...');
+      }
+      
+      // Save user data
+      if (result.user) {
+        localStorage.setItem('user', JSON.stringify(result.user));
+        localStorage.setItem('userId', result.user.id);
+        console.log('👤 User data saved');
+      }
+      
+      // Show success toast
       setUserName(result.user?.name || form.email);
       setShowSuccessToast(true);
       
@@ -81,11 +101,13 @@ function Login() {
       
       // Redirect ke home setelah 2.5 detik
       setTimeout(() => {
+        console.log('🏠 Redirecting to home...');
         navigate('/');
       }, 2500);
       
     } else {
-      // Login gagal
+      // ❌ Login gagal
+      console.error('❌ Login failed:', result.message);
       setError(result.message);
       setLoading(false);
     }

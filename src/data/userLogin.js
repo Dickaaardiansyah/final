@@ -1,3 +1,4 @@
+// data/userLogin.js - FIXED VERSION
 import CONFIG from '../config/config';
 
 const ENDPOINTS = {
@@ -5,34 +6,42 @@ const ENDPOINTS = {
   USER_PROFILE: `${CONFIG.BASE_URL}/users`,
 };
 
-// Login User Function - Cookie-based authentication
+// Login User Function - FIXED
 export async function loginUser({ email, password }) {
   try {
-    console.log('Attempting login with:', { email });
+    console.log('🔐 Attempting login with:', { email });
 
     const response = await fetch(ENDPOINTS.USER_LOGIN, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      credentials: 'include', // Include cookies in request
+      credentials: 'include', // Include cookies
       body: JSON.stringify({
         email,
         password,
       }),
     });
 
-    console.log('Login response status:', response.status);
+    console.log('📡 Login response status:', response.status);
 
     const data = await response.json();
-    console.log('Login response data:', data);
+    console.log('📦 Login response data:', data);
 
     if (response.ok && data.accessToken) {
-      // Login berhasil
-      console.log('Login successful!');
+      // ✅ Login berhasil - SAVE TOKEN
+      console.log('✅ Login successful!');
       
-      // Store access token in memory only (you can use a global state management like Redux/Context)
-      // For now, we'll store it temporarily in a module variable or return it to be handled by the component
+      // 🔑 Save access token
+      localStorage.setItem('accessToken', data.accessToken);
+      console.log('💾 Token saved to localStorage');
+      
+      // Save user data
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('userId', data.user.id);
+        console.log('👤 User data saved:', data.user.name);
+      }
       
       return {
         success: true,
@@ -42,7 +51,8 @@ export async function loginUser({ email, password }) {
       };
 
     } else {
-      // Login gagal
+      // ❌ Login gagal
+      console.error('❌ Login failed:', data.msg);
       return {
         success: false,
         message: data.msg || data.message || 'Login gagal'
@@ -50,17 +60,11 @@ export async function loginUser({ email, password }) {
     }
 
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('❌ Login error:', error);
     
-    // Handle different types of errors
     let errorMessage;
-    
     if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
       errorMessage = 'Gagal terhubung ke server. Pastikan server berjalan di localhost:5000';
-    } else if (error.message.includes('401') || error.message.includes('Wrong')) {
-      errorMessage = 'Email atau password salah';
-    } else if (error.message.includes('404') || error.message.includes('User not found')) {
-      errorMessage = 'Email tidak terdaftar';
     } else {
       errorMessage = error.message || 'Terjadi kesalahan saat login';
     }
@@ -72,12 +76,24 @@ export async function loginUser({ email, password }) {
   }
 }
 
-// Function to get current user profile (using cookies for auth)
+// Function to get current user profile
 export async function getCurrentUser() {
   try {
+    const token = localStorage.getItem('accessToken');
+    
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      console.log('🔐 Request with token');
+    }
+
     const response = await fetch(ENDPOINTS.USER_PROFILE, {
       method: 'GET',
-      credentials: 'include', // Include cookies
+      headers: headers,
+      credentials: 'include',
     });
 
     if (response.ok) {
@@ -93,7 +109,7 @@ export async function getCurrentUser() {
       };
     }
   } catch (error) {
-    console.error('Get user error:', error);
+    console.error('❌ Get user error:', error);
     return {
       success: false,
       message: 'Network error'
@@ -106,18 +122,44 @@ export async function logoutUser() {
   try {
     const response = await fetch(`${CONFIG.BASE_URL}/logout`, {
       method: 'DELETE',
-      credentials: 'include', // Include cookies
+      credentials: 'include',
     });
+
+    // 🗑️ Clear localStorage
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('userId');
+    
+    console.log('🚪 Logged out - tokens cleared');
 
     return {
       success: response.ok,
       message: response.ok ? 'Logout successful' : 'Logout failed'
     };
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error('❌ Logout error:', error);
+    
+    // Clear tokens anyway
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('userId');
+    
     return {
       success: false,
       message: 'Network error during logout'
     };
   }
+}
+
+// Helper function to check if logged in
+export function isLoggedIn() {
+  const token = localStorage.getItem('accessToken');
+  return !!token;
+}
+
+// Helper function to get token
+export function getToken() {
+  return localStorage.getItem('accessToken');
 }

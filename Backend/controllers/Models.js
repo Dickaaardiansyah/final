@@ -1,13 +1,13 @@
+// controllers/Models.js - Updated (Data Ikan dipindah ke Histori.js)
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { promisify } from 'util';
-import FishPredictions from '../models/fishPredictionModel.js'; // Import model Sequelize
-import Users from '../models/userModel.js'; // Import Users model
+import FishPredictions from '../models/fishPredictionModel.js';
+import Users from '../models/userModel.js';
 import jwt from 'jsonwebtoken';
-import { Op } from 'sequelize'; // Import Sequelize operators
-import DataIkan from '../models/dataIkanModel.js';
+import { Op } from 'sequelize';
 
 // Untuk ES module (__dirname)
 const __filename = fileURLToPath(import.meta.url);
@@ -127,7 +127,12 @@ const copyImageToDataFolder = async (tempPath, newFilename) => {
   }
 };
 
-// Tabular prediction
+// ==================== ML PREDICTION FUNCTIONS ====================
+
+/**
+ * Tabular prediction
+ * Melakukan prediksi menggunakan data tabular (array features)
+ */
 export const predictTabular = (req, res) => {
   const features = req.body.features;
 
@@ -144,7 +149,10 @@ export const predictTabular = (req, res) => {
   handlePythonProcess(python, res);
 };
 
-// Image prediction
+/**
+ * Image prediction
+ * Melakukan prediksi menggunakan gambar
+ */
 export const predictImage = (req, res) => {
   if (!req.file) {
     return res.status(400).json({
@@ -162,72 +170,12 @@ export const predictImage = (req, res) => {
   handlePythonProcess(python, res);
 };
 
-// ==================== DATABASE SAVE FUNCTIONS ====================
+// ==================== SCAN FUNCTIONS (FishPredictions) ====================
 
-//getdatatohistory
-export const getAllDataIkan = async (req, res) => {
-  try {
-    const data = await DataIkan.findAll({
-      include: [{ model: Users, as: 'user', attributes: ['id', 'name', 'email'] }],
-      order: [['createdAt', 'DESC']]
-    });
-
-    const formatted = data.map(item => ({
-      id: item.id,
-      date: item.createdAt,
-      status: "completed",
-      fishData: {
-        name: item.namaIkan,
-        predicted_class: item.predictedClass,
-        confidence: `${(item.probability * 100).toFixed(1)}%`,
-        habitat: item.habitat,
-        konsumsi: item.konsumsi,
-        icon: "🐟",
-        top_predictions: item.notes ? JSON.parse(item.notes.replace("Top 3 predictions: ", "") || "[]") : []
-      },
-      image: item.fishImage
-    }));
-
-    res.json({ status: "success", data: formatted });
-  } catch (err) {
-    console.error("Error fetching data_ikan:", err);
-    res.status(500).json({ status: "error", message: err.message });
-  }
-};
-
-export const saveToDataIkan = async (req, res) => {
-  try {
-    let userId = getUserIdFromToken(req) || req.body.userId || 1;
-
-    const { fish_name, predicted_class, confidence, habitat, konsumsi, top_predictions, notes } = req.body;
-    if (!fish_name || !predicted_class || !confidence) {
-      return res.status(400).json({ status: 'error', message: 'fish_name, predicted_class, dan confidence harus diisi' });
-    }
-
-    let fishImageBase64 = null;
-    if (req.file) {
-      fishImageBase64 = await convertImageToBase64(req.file.path);
-    }
-
-    const newData = await DataIkan.create({
-      userId,
-      namaIkan: fish_name,
-      predictedClass: predicted_class,
-      probability: parseFloat(confidence) / 100,
-      habitat: habitat || 'Tidak diketahui',
-      konsumsi: konsumsi || 'Tidak diketahui',
-      fishImage: fishImageBase64,
-      notes: notes || `Top 3 predictions: ${top_predictions || '[]'}`
-    });
-
-    res.json({ status: 'success', message: 'Data berhasil disimpan ke data_ikan', data: newData });
-  } catch (err) {
-    console.error('Error saving to data_ikan:', err);
-    res.status(500).json({ status: 'error', message: err.message });
-  }
-};
-
-// Save scan result to database table
+/**
+ * Save scan result to database
+ * Menyimpan hasil scan ke tabel fish_predictions
+ */
 export const saveScan = async (req, res) => {
   try {
     console.log('=== Save Scan to Database ===');
@@ -314,7 +262,10 @@ export const saveScan = async (req, res) => {
   }
 };
 
-// Save to catalog (sama seperti saveScan tapi bisa ditambah field khusus catalog)
+/**
+ * Save to catalog
+ * Menyimpan data ke katalog (memerlukan role contributor/admin)
+ */
 export const saveToCatalog = async (req, res) => {
   try {
     console.log('=== SAVE TO CATALOG DEBUG ===');
@@ -449,13 +400,24 @@ export const saveToCatalog = async (req, res) => {
 
 // ==================== GET DATA FROM DATABASE ====================
 
+/**
+ * Get Scans
+ * Mengambil data scan dari fish_predictions
+ */
 export const getScans = async (req, res) => {
   try {
     let userId = getUserIdFromToken(req);
     let whereClause = {};
+    
+    // Filter by userId if authenticated
     if (userId) {
       whereClause.userId = userId;
     }
+
+    // Exclude catalog items
+    whereClause.notes = {
+      [Op.notLike]: '%CATALOG%'
+    };
 
     const scans = await FishPredictions.findAll({
       where: whereClause,
@@ -515,6 +477,10 @@ export const getScans = async (req, res) => {
   }
 };
 
+/**
+ * Get Catalog
+ * Mengambil data catalog dari fish_predictions
+ */
 export const getCatalog = async (req, res) => {
   try {
     let userId = getUserIdFromToken(req);
@@ -523,7 +489,9 @@ export const getCatalog = async (req, res) => {
         [Op.like]: '%CATALOG%'
       }
     };
-    if (userId) {
+    
+    // Optional: filter by userId if provided
+    if (userId && req.query.my === 'true') {
       whereClause.userId = userId;
     }
 

@@ -15,7 +15,7 @@ const Admin = db.define("admins", {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
-      len: [10, 15], // tergantung format no HP
+      len: [10, 15],
       is: /^[0-9]+$/i
     }
   },
@@ -39,63 +39,53 @@ const Admin = db.define("admins", {
     }
   },
   
-  // ⭐ Role Admin untuk Catalog Management
+  // Role Admin sederhana
   role: {
-    type: DataTypes.ENUM("super_admin", "catalog_moderator", "admin"),
+    type: DataTypes.ENUM("super_admin", "admin"),
     allowNull: false,
-    defaultValue: "catalog_moderator",
-    comment: 'Role admin: super_admin (semua akses), catalog_moderator (approve catalog requests), admin (basic)'
+    defaultValue: "admin"
   },
   
-  // ⭐ Permissions untuk granular access control
+  // Permissions sederhana
   permissions: {
     type: DataTypes.JSON,
     allowNull: true,
     defaultValue: {
-      approve_catalog_requests: true,
       manage_users: false,
       manage_admins: false,
-      view_analytics: true,
-      moderate_content: true
-    },
-    comment: 'JSON object untuk granular permissions'
+      view_analytics: true
+    }
   },
   
-  // ⭐ Status Admin
+  // Status Admin
   status: {
     type: DataTypes.ENUM("active", "inactive", "suspended"),
     allowNull: false,
-    defaultValue: "active",
-    comment: 'Status admin: active, inactive, suspended'
+    defaultValue: "active"
   },
   
-  // ⭐ Session Management
+  // Session Management
   refresh_token: {
     type: DataTypes.TEXT,
-    allowNull: true,
-    comment: 'Refresh token untuk login'
+    allowNull: true
   },
   last_login: {
     type: DataTypes.DATE,
-    allowNull: true,
-    comment: 'Waktu login terakhir'
+    allowNull: true
   },
   
-  // ⭐ Audit Trail
+  // Audit Trail
   created_by: {
     type: DataTypes.INTEGER,
-    allowNull: true,
-    comment: 'ID admin yang membuat record ini'
+    allowNull: true
   },
   updated_by: {
     type: DataTypes.INTEGER,
-    allowNull: true,
-    comment: 'ID admin yang terakhir mengupdate'
+    allowNull: true
   }
 }, {
   freezeTableName: true,
   
-  // ⭐ Hooks untuk auto-update created_by dan updated_by
   hooks: {
     beforeCreate: (admin, options) => {
       if (options.adminId) {
@@ -112,7 +102,6 @@ const Admin = db.define("admins", {
         admin.updated_by = options.adminId;
       }
       
-      // Update last login saat login berhasil
       if (admin.changed('refresh_token') && admin.refresh_token) {
         admin.last_login = new Date();
       }
@@ -120,14 +109,7 @@ const Admin = db.define("admins", {
   }
 });
 
-// ⭐ Instance Methods untuk permission checking
-Admin.prototype.canApproveCatalogRequests = function() {
-  return this.status === 'active' && 
-         (this.role === 'super_admin' || 
-          this.role === 'catalog_moderator' || 
-          this.permissions?.approve_catalog_requests === true);
-};
-
+// Instance Methods sederhana
 Admin.prototype.canManageUsers = function() {
   return this.status === 'active' && 
          (this.role === 'super_admin' || 
@@ -140,52 +122,25 @@ Admin.prototype.canManageAdmins = function() {
           this.permissions?.manage_admins === true);
 };
 
-Admin.prototype.canModerateContent = function() {
-  return this.status === 'active' && 
-         (this.role === 'super_admin' || 
-          this.role === 'catalog_moderator' || 
-          this.permissions?.moderate_content === true);
-};
-
-// ⭐ Static Methods
+// Static Methods
 Admin.getDefaultPermissions = function(role) {
   const permissions = {
     super_admin: {
-      approve_catalog_requests: true,
       manage_users: true,
       manage_admins: true,
-      view_analytics: true,
-      moderate_content: true
-    },
-    catalog_moderator: {
-      approve_catalog_requests: true,
-      manage_users: false,
-      manage_admins: false,
-      view_analytics: true,
-      moderate_content: true
+      view_analytics: true
     },
     admin: {
-      approve_catalog_requests: false,
       manage_users: false,
       manage_admins: false,
-      view_analytics: true,
-      moderate_content: false
+      view_analytics: true
     }
   };
   
   return permissions[role] || permissions.admin;
 };
 
-Admin.getActiveModerators = function() {
-  return this.findAll({
-    where: {
-      status: 'active',
-      role: ['super_admin', 'catalog_moderator']
-    }
-  });
-};
-
-// ⭐ Self-referencing associations untuk tracking siapa yang buat/update admin
+// Self-referencing associations
 Admin.belongsTo(Admin, { 
   as: 'creator', 
   foreignKey: 'created_by',

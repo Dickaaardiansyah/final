@@ -26,7 +26,7 @@ Content-Type: application/json
 
 {
   "name": "Super Admin",
-  "phone": "081234567890",
+  "phone": "081234567897",
   "email": "superadmin@fishmap.com",
   "gender": "male",
   "password": "password123",

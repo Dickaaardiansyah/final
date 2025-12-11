@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginUser, getCurrentUser } from '../../../data/userLogin'; // Import API function
+import { loginUser, getCurrentUser } from '../../../data/userAuth'; // Updated import
 import '../../../styles/login.css'; 
 
 function Login() {

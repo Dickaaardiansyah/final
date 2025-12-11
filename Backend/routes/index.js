@@ -48,18 +48,7 @@ import { verifyAdminToken, requireSuperAdmin } from '../middleware/VerifyAdminTo
 import { refreshAdminToken } from '../controllers/AdminRefreshToken.js';
 
 
-// Import catalog controllers
-import {
-  requestCatalogAccess,
-  getCatalogAccessStatus,
-  savePredictionToCatalog,
-  getAllCatalogEntries,
-  getPendingCatalogRequests,
-  approveCatalogRequest,
-  rejectCatalogRequest,
-  getCatalogStatistics,
-  uploadKTP
-} from '../controllers/CatalogController.js';
+
 
 // Import email controllers
 import {
@@ -94,9 +83,6 @@ import Users from '../models/userModel.js';
 import { Op } from 'sequelize';
 import bcrypt from 'bcrypt';
 
-
-import { saveToDataIkan } from '../controllers/Models.js';
-import { getAllDataIkan } from '../controllers/Models.js';
 
 
 const router = express.Router();
@@ -268,9 +254,6 @@ router.get('/api/data-ikan/all', verifyToken, getAllDataIkan);
 // Backward compatibility - redirect to authenticated version
 router.get('/api/data-ikan', verifyToken, getMyDataIkan);
 
-// ==================== CATALOG PERMISSION SYSTEM ROUTES ====================
-router.post('/api/catalog/request-access', verifyToken, requestCatalogAccess);
-router.get('/api/catalog/my-status', verifyToken, getCatalogAccessStatus);
 
 router.get('/api/catalog/approval-status', verifyToken, async (req, res) => {
   try {
@@ -317,7 +300,7 @@ router.get('/api/catalog/status', verifyToken, async (req, res) => {
     console.error('❌ Error getting catalog status from cookies:', error);
     res.status(500).json({
       status: 'error',
-      msg: 'Failed to get catalog status'
+      // msg: 'Failed to get catalog status'
     });
   }
 });
@@ -429,16 +412,7 @@ router.get('/api/debug/cookies', verifyToken, async (req, res) => {
   }
 });
 
-// ==================== CATALOG ENTRIES ROUTES ====================
-router.post('/api/catalog/save-prediction', verifyToken, savePredictionToCatalog);
-router.get('/api/catalog/entries', getAllCatalogEntries);
-router.post('/api/catalog/upload-ktp', verifyToken, upload.single('ktp'), uploadKTP);
 
-// ADMIN Catalog Routes
-router.get('/api/catalog/admin/pending-requests', verifyAdminToken, getPendingCatalogRequests);
-router.post('/api/catalog/admin/approve/:userId', verifyAdminToken, approveCatalogRequest);
-router.post('/api/catalog/admin/reject/:userId', verifyAdminToken, rejectCatalogRequest);
-router.get('/api/catalog/admin/statistics', verifyAdminToken, getCatalogStatistics);
 
 // ==================== EMAIL NOTIFICATION ROUTES ====================
 router.get('/api/email/test-connection', testEmailConnection);
@@ -612,7 +586,6 @@ router.get('/api/galery/:id', getGaleryById);
 router.post('/api/galery', verifyAdminToken, createGalery);
 router.put('/api/galery/:id', verifyAdminToken, updateGalery);
 router.delete('/api/galery/:id', verifyAdminToken, deleteGalery);
-router.get('/api/admin/approved-users', verifyAdminToken, getApprovedUsers);
 
 // ==================== RECIPE ROUTES ====================
 //dataikan

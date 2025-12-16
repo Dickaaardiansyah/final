@@ -57,27 +57,27 @@ function FishSellers() {
     { 
       id: 6, 
       nama: "Ikan Kerapu", 
-      image: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300&h=200&fit=crop"
+      image: "/icons/kerapu.jpg"
     },
     { 
       id: 7, 
       nama: "Ikan Mujair", 
-      image: "https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=300&h=200&fit=crop"
+      image: "/icons/mujair.jpg"
     },
     { 
       id: 8, 
       nama: "Ikan Nila", 
-      image: "https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=300&h=200&fit=crop"
+      image: "/icons/nila.jpg"
     },
     { 
       id: 9, 
       nama: "Ikan Tenggiri", 
-      image: "https://images.unsplash.com/photo-1544552866-d3ed42536cfd?w=300&h=200&fit=crop"
+      image: "/icons/tengiri.jpg"
     },
     { 
       id: 10, 
       nama: "Ikan Tongkol", 
-      image: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300&h=200&fit=crop"
+      image: "/icons/tongkol.jpeg"
     },
   ];
 

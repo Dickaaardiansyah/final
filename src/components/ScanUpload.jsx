@@ -16,27 +16,30 @@ function ScanUpload() {
   const [recipes, setRecipes] = useState([]);
   const [isLoadingRecipes, setIsLoadingRecipes] = useState(false);
   
+  // Chatbot states
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isSendingChat, setIsSendingChat] = useState(false);
+  const chatContainerRef = useRef(null);
+  
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
   const API_BASE_URL = 'http://localhost:5000';
 
   const getAuthToken = () => {
-    // Try localStorage first
     let token = localStorage.getItem('accessToken');
     if (token) {
       console.log('✅ Token found in localStorage');
       return token;
     }
 
-    // Try sessionStorage
     token = sessionStorage.getItem('accessToken');
     if (token) {
       console.log('✅ Token found in sessionStorage');
       return token;
     }
 
-    // Try cookie
     const cookies = document.cookie.split(';');
     for (let cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
@@ -50,7 +53,6 @@ function ScanUpload() {
     return null;
   };
 
-  // 🔐 Helper function to create headers with auth
   const getAuthHeaders = () => {
     const token = getAuthToken();
     const headers = {};
@@ -64,7 +66,7 @@ function ScanUpload() {
     
     return headers;
   };
-  // In-memory storage
+
   const [savedData, setSavedData] = useState({});
 
   useEffect(() => {
@@ -82,18 +84,31 @@ function ScanUpload() {
         analysisResult: analysisResult,
         selectedImage: selectedImage
       });
-      // Fetch recipes when analysis result is available
       fetchRecipes(analysisResult.name || analysisResult.predicted_class);
+      
+      // Initialize chat with greeting when fish is identified
+      setChatMessages([
+        {
+          role: 'assistant',
+          content: `Halo! Saya siap membantu Anda dengan budidaya ikan ${analysisResult.name}. Anda bisa menanyakan tentang cara merawat, pakan yang cocok, atau masalah lainnya. Silakan tanyakan apapun! 🐟`
+        }
+      ]);
     }
   }, [analysisResult, selectedImage]);
 
-  // Fetch recipes based on fish name
+  // Auto scroll chat to bottom
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
+
   const fetchRecipes = async (fishName) => {
     setIsLoadingRecipes(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/recipes/fish/${encodeURIComponent(fishName)}`, {
         method: 'GET',
-         headers: getAuthHeaders(), // ✅ Add auth headers
+        headers: getAuthHeaders(),
         credentials: 'include'
       });
 
@@ -102,7 +117,6 @@ function ScanUpload() {
         if (result.data && result.data.length > 0) {
           setRecipes(result.data);
         } else {
-          // Use default recipes if none found
           setRecipes([]);
         }
       } else {
@@ -113,6 +127,55 @@ function ScanUpload() {
       setRecipes([]);
     } finally {
       setIsLoadingRecipes(false);
+    }
+  };
+
+  // Send chat message to backend
+  const sendChatMessage = async () => {
+    if (!chatInput.trim()) return;
+
+    const token = getAuthToken();
+    if (!token) {
+      alert('Anda harus login untuk menggunakan chatbot');
+      return;
+    }
+
+    const userMessage = chatInput.trim();
+    setChatInput('');
+    
+    // Add user message to chat
+    setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setIsSendingChat(true);
+
+    try {
+      // Create context-aware message with fish name
+      const contextMessage = `Saya sedang budidaya ikan ${analysisResult?.name || 'tidak diketahui'}. ${userMessage}`;
+      
+      const response = await fetch(`${API_BASE_URL}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ message: contextMessage })
+      });
+
+      if (!response.ok) {
+        throw new Error('Gagal mendapatkan response dari chatbot');
+      }
+
+      const data = await response.json();
+      
+      // Add bot response to chat
+      setChatMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+    } catch (error) {
+      console.error('Chat error:', error);
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'Maaf, terjadi kesalahan. Silakan coba lagi.' 
+      }]);
+    } finally {
+      setIsSendingChat(false);
     }
   };
 
@@ -395,7 +458,6 @@ function ScanUpload() {
       return;
     }
 
-    // 🔐 Check if token exists
     const token = getAuthToken();
     if (!token) {
       alert('Anda harus login untuk menyimpan data. Silakan login terlebih dahulu.');
@@ -421,13 +483,12 @@ function ScanUpload() {
 
       console.log('💾 Saving to database with authentication...');
 
-      // ✅ CRITICAL: Add Authorization header
-      const response = await fetch(`${API_BASE_URL}/api/save-to-dataikan`, {
+      const response = await fetch(`${API_BASE_URL}/api/data-ikan`, {
         method: 'POST',
         mode: 'cors',
         credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}` // ✅ Add token!
+          'Authorization': `Bearer ${token}`
         },
         body: formData
       });
@@ -492,6 +553,8 @@ function ScanUpload() {
     setShowDetail(false);
     setExpandedItems({});
     setRecipes([]);
+    setChatMessages([]);
+    setChatInput('');
     stopCamera();
   };
 
@@ -522,34 +585,12 @@ function ScanUpload() {
     }));
   };
 
-  // Default budidaya items (always shown)
   const budidayaItems = [
-    {
-      name: 'Pastikan kualitas air tetap bersih dengan pH optimal',
-      resep: '1. Ukur pH air secara rutin (ideal 6.5-8.5). 2. Ganti air secara berkala. 3. Gunakan filter untuk menjaga kebersihan. 4. Hindari overfeeding untuk mencegah pencemaran.',
-      image: 'https://mmc.tirto.id/image/2022/06/14/istock-519915660_ratio-16x9.jpg'
-    },
-    {
-      name: 'Berikan pakan berkualitas sesuai jadwal',
-      resep: '1. Beri pakan 2-3 kali sehari. 2. Gunakan pelet dengan protein 20-30%. 3. Sesuaikan jumlah pakan dengan bobot ikan (2-3% berat tubuh). 4. Pantau sisa pakan untuk hindari polusi.',
-      image: 'https://kuripan.lombokbaratkab.go.id/media/crop/2022/09/08/32-20220908-150322-785183.jpeg'
-    },
-    {
-      name: 'Monitor kesehatan ikan secara rutin',
-      resep: '1. Periksa tanda penyakit seperti lesu atau bintik putih. 2. Karantina ikan sakit. 3. Gunakan obat jika diperlukan. 4. Jaga kepadatan ikan di kolam.',
-      image: 'https://gdm.id/wp-content/uploads/2022/03/ternak-ikan-mujair.jpg'
-    },
-    {
-      name: 'Jaga suhu air sesuai kebutuhan spesies',
-      resep: '1. Ideal suhu 25-30°C. 2. Gunakan pemanas jika diperlukan. 3. Hindari perubahan suhu mendadak. 4. Monitor suhu harian.',
-      image: 'https://i1.wp.com/risetcdn.jatimtimes.com/images/2024/04/19/Ikan-Mujair-di-kolam-air-tawar.-Foto-Xjellypastaa-P6f3c3d128f525baf.jpg?quality=50&resize=1200,675'
-    }
+
   ];
 
-  // Format recipe instructions to array
   const formatInstructions = (instructions) => {
     if (!instructions) return [];
-    // Split by numbers followed by dot (1. 2. 3. etc)
     const steps = instructions.split(/\d+\.\s+/).filter(step => step.trim());
     return steps;
   };
@@ -1284,9 +1325,179 @@ function ScanUpload() {
               
               {activeTab === 'budidaya' && (
                 <div style={{ color: '#374151', lineHeight: 1.8 }}>
-                  <p style={{ margin: '0 0 1.5rem 0', fontSize: '1rem', fontWeight: '500', color: '#4b5563' }}>
-                    Tips budidaya ikan {analysisResult?.name || 'ini'}:
-                  </p>
+                  {/* Chatbot Section */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(16, 185, 129, 0.05))',
+                    borderRadius: '16px',
+                    padding: '1.5rem',
+                    marginBottom: '1.5rem',
+                    border: '1px solid rgba(37, 99, 235, 0.1)'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      marginBottom: '1rem'
+                    }}>
+                      <div style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #2563eb, #10b981)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '1.125rem'
+                      }}>
+                        🤖
+                      </div>
+                      <h3 style={{
+                        margin: 0,
+                        fontSize: '1.125rem',
+                        fontWeight: '700',
+                        color: '#1f2937'
+                      }}>
+                        Tanya Chatbot AI
+                      </h3>
+                    </div>
+                    
+                    {/* Chat Messages */}
+                    <div 
+                      ref={chatContainerRef}
+                      style={{
+                        maxHeight: '300px',
+                        overflowY: 'auto',
+                        marginBottom: '1rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.75rem'
+                      }}
+                    >
+                      {chatMessages.map((msg, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: 'flex',
+                            justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start'
+                          }}
+                        >
+                          <div style={{
+                            maxWidth: '80%',
+                            padding: '0.75rem 1rem',
+                            borderRadius: '12px',
+                            background: msg.role === 'user' 
+                              ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' 
+                              : '#ffffff',
+                            color: msg.role === 'user' ? 'white' : '#1f2937',
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                            fontSize: '0.875rem',
+                            lineHeight: 1.6,
+                            border: msg.role === 'assistant' ? '1px solid #e5e7eb' : 'none'
+                          }}>
+                            {msg.content}
+                          </div>
+                        </div>
+                      ))}
+                      {isSendingChat && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                          <div style={{
+                            padding: '0.75rem 1rem',
+                            borderRadius: '12px',
+                            background: '#ffffff',
+                            border: '1px solid #e5e7eb',
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                          }}>
+                            <div style={{
+                              display: 'flex',
+                              gap: '0.25rem',
+                              alignItems: 'center'
+                            }}>
+                              <div style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                background: '#2563eb',
+                                animation: 'bounce 1.4s infinite ease-in-out both',
+                                animationDelay: '-0.32s'
+                              }}></div>
+                              <div style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                background: '#2563eb',
+                                animation: 'bounce 1.4s infinite ease-in-out both',
+                                animationDelay: '-0.16s'
+                              }}></div>
+                              <div style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                background: '#2563eb',
+                                animation: 'bounce 1.4s infinite ease-in-out both'
+                              }}></div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Chat Input */}
+                    <div style={{
+                      display: 'flex',
+                      gap: '0.5rem'
+                    }}>
+                      <input
+                        type="text"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && !isSendingChat) {
+                            sendChatMessage();
+                          }
+                        }}
+                        placeholder={`Tanya tentang budidaya ${analysisResult?.name || 'ikan'}...`}
+                        disabled={isSendingChat}
+                        style={{
+                          flex: 1,
+                          padding: '0.75rem 1rem',
+                          borderRadius: '12px',
+                          border: '1px solid #d1d5db',
+                          fontSize: '0.875rem',
+                          outline: 'none',
+                          background: 'white'
+                        }}
+                      />
+                      <button
+                        onClick={sendChatMessage}
+                        disabled={isSendingChat || !chatInput.trim()}
+                        style={{
+                          padding: '0.75rem 1.25rem',
+                          borderRadius: '12px',
+                          border: 'none',
+                          background: isSendingChat || !chatInput.trim() 
+                            ? '#9ca3af' 
+                            : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                          color: 'white',
+                          cursor: isSendingChat || !chatInput.trim() ? 'not-allowed' : 'pointer',
+                          fontSize: '0.875rem',
+                          fontWeight: '600',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        {isSendingChat ? (
+                          <i className="fas fa-spinner fa-spin"></i>
+                        ) : (
+                          <i className="fas fa-paper-plane"></i>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tips Budidaya */}
+      
                   <ul style={{ listStyle: 'none', padding: 0, margin: '1rem 0', display: 'grid', gap: '1rem' }}>
                     {budidayaItems.map((item, index) => (
                       <li 
@@ -1351,6 +1562,15 @@ function ScanUpload() {
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes bounce {
+          0%, 80%, 100% { 
+            transform: scale(0);
+          } 
+          40% { 
+            transform: scale(1.0);
+          }
         }
       `}</style>
     </div>

@@ -26,8 +26,8 @@ Content-Type: application/json
 
 {
   "name": "Super Admin",
-  "phone": "081234567897",
-  "email": "superadmin@fishmap.com",
+  "phone": "081234567895",
+  "email": "fishnap@fishnap.com",
   "gender": "male",
   "password": "password123",
   "role": "super_admin"
@@ -186,3 +186,31 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbklkIjoxLCJuY
 DELETE http://localhost:5000/api/recipes/1
 Content-Type: application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbklkIjoxLCJuYW1lIjoiU3VwZXIgQWRtaW4iLCJlbWFpbCI6InN1cGVyYWRtaW5AZmlzaG1hcC5jb20iLCJyb2xlIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3NTYyNzU1NjcsImV4cCI6MTc1NjMwNDM2N30.qxAdk2nQk1Wz_Z0JGhe8RXPBZWHkR_D9eOkL_cu4Ulk
+
+
+
+### ============================================
+### CHATBOT BUDIDAYA IKAN (GROQ)
+### ============================================
+
+### Chatbot Budidaya Ikan (User Login Required)
+POST http://localhost:5000/api/chatbot/ikan
+Content-Type: application/json
+Authorization: Bearer 
+
+{
+  "message": "Kenapa ikan lele sering naik ke permukaan air?"
+}
+
+### ============================================
+### CHATBOT BUDIDAYA IKAN (GROQ AI)
+### ============================================
+
+### Chatbot Budidaya Ikan - Tanya Umum
+POST http://localhost:5000/chat
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEwLCJuYW1lIjoiTWF1bGFuYSBOdXJmYWl6aSBBbnVnZXJhaCIsImVtYWlsIjoiYW5ha2J1ZGltYW4wMUBnbWFpbC5jb20iLCJpYXQiOjE3NjU3MTU0MzgsImV4cCI6MTc2NTcxNjMzOH0.R_c0ZX1nX7VXa8zMDuO4_7cS1NBTVYOp2FTa0TCRJQQ
+
+{
+  "message": "halo? cara budidaya ikan lele gimana?"
+}

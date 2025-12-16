@@ -1,6 +1,6 @@
 // FishSellers.jsx - Professional Card Design dengan Gambar Ikan
 import React, { useState, useEffect } from "react";
-import styles from "../../styles/admin/Dashboard.module.css";
+import styles from "../../styles/admin/Dashboard.module.css"; 
 import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
 import axios from 'axios';
@@ -32,27 +32,27 @@ function FishSellers() {
     { 
       id: 1, 
       nama: "Ikan Bandeng", 
-      image: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300&h=200&fit=crop"
+      image: "https://images.unsplash.com/photo-1623260858519-f910440955e5?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
     },
-    { 
-      id: 2, 
-      nama: "Ikan Cupang", 
-      image: "https://images.unsplash.com/photo-1520990692939-e6f1d4b6471a?w=300&h=200&fit=crop"
-    },
+    // { 
+    //   id: 2, 
+    //   nama: "Ikan Cupang", 
+    //   image: "https://images.unsplash.com/photo-1520990692939-e6f1d4b6471a?w=300&h=200&fit=crop"
+    // },
     { 
       id: 3, 
       nama: "Ikan Gabus", 
-      image: "https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=300&h=200&fit=crop"
+      image: "/icons/gabus.jpg"
     },
     { 
       id: 4, 
       nama: "Ikan Gurami", 
-      image: "https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?w=300&h=200&fit=crop"
+      image: "/icons/gurami.jpg"
     },
     { 
       id: 5, 
       nama: "Ikan Kakap", 
-      image: "https://images.unsplash.com/photo-1544552866-d3ed42536cfd?w=300&h=200&fit=crop"
+      image: "/icons/kakap.jpg"
     },
     { 
       id: 6, 

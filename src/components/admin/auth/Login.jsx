@@ -15,11 +15,6 @@ function AdminLogin() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Demo credentials untuk testing
-  const DEMO_CREDENTIALS = {
-    email: 'superadmin@fishmap.com',
-    password: 'password123'
-  };
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -208,27 +203,7 @@ function AdminLogin() {
         transform: 'translateY(0)',
         transition: 'transform 0.3s ease'
       }}>
-        {/* Demo credentials hint */}
-        <div style={{
-          position: 'absolute',
-          top: '-70px',
-          right: '0',
-          background: 'rgba(0,0,0,0.8)',
-          color: 'white',
-          padding: '12px 16px',
-          borderRadius: '8px',
-          fontSize: '12px',
-          maxWidth: '200px',
-          zIndex: 10,
-          cursor: 'pointer'
-        }} onClick={fillDemoCredentials}>
-          <strong>Demo Login:</strong><br />
-          Email: superadmin@fishmap.com<br />
-          Password: password123
-          <br />
-          <small style={{color: '#94a3b8'}}>Click untuk auto-fill</small>
-        </div>
-
+        
         <div className="logo-section" style={{
           textAlign: 'center',
           marginBottom: '40px'

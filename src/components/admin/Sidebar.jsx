@@ -82,7 +82,7 @@ function Sidebar() {
           </Link>
         </li>
 
-        <li className={styles.navItem}>
+        {/* <li className={styles.navItem}>
           <Link 
             to="/admin/reports" 
             className={`${styles.navLink} ${isActive('/admin/reports') ? styles.active : ''}`}
@@ -94,9 +94,9 @@ function Sidebar() {
             </svg>
             <span>Laporan</span>
           </Link>
-        </li>
+        </li> */}
 
-        <li className={styles.navItem}>
+        {/* <li className={styles.navItem}>
           <Link 
             to="/admin/settings" 
             className={`${styles.navLink} ${isActive('/admin/settings') ? styles.active : ''}`}
@@ -108,7 +108,7 @@ function Sidebar() {
             </svg>
             <span>Pengaturan</span>
           </Link>
-        </li>
+        </li> */}
       </ul>
     </nav>
   );
